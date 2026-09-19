@@ -1,0 +1,133 @@
+# Local implementation
+
+Updated on 12 September 2026. This describes the current code; the architecture proposal includes later stages.
+
+## Process and persistence
+
+`apps/web` uses Next.js 16, React, and Astryx. `packages/theme` compiles the Nerilo light/dark tokens and editorial heading variant. The daemon in `apps/daemon` owns a SQLite database, task scheduling, credentials, and Docker. `packages/protocol` shares validated request and state shapes.
+
+Task creation and follow-up acceptance are transactional and accept idempotency keys. Events have monotonic replay cursors. The browser receives event notifications and refreshes state, with periodic refresh as a fallback. Unsent drafts remain in browser local storage.
+
+Each turn has a deterministic container name and a persisted log cursor. The daemon reconciles container state after a restart and ingests output that arrived while it was absent. Tasks retain independent workspace and agent-home volumes across turns. Interrupted preparation fails visibly and can be retried. Pausing stops the current container; continuing uses retained files and any established agent session. A computer that is asleep cannot advance local work.
+
+## Execution
+
+For local projects, the daemon creates a Git bundle of the selected project's current commit. GitHub projects need no local working copy: the host authenticates a bare fetch, pins the selected branch revision at task creation, and transfers a self-contained bundle. The actual working repository is created inside the task container, without GitHub credentials. Including local changes captures working files through a separate Git index, optionally including untracked files while excluding Git-ignored files. It applies this patch and creates a snapshot commit in a temporary clone, leaving the host index, refs, and files untouched. The snapshot becomes the task's baseline, keeping the agent diff separate from pre-existing work. It verifies the host commit did not change during capture and retains the starting bundle under `snapshots/` for later local checkouts. Repository-specific dependencies can be installed using the project's preparation command. Git submodules, Git LFS materialization, external services, and private dependency authentication need additional configuration and are not provisioned automatically.
+
+The image pins Node's base digest and the Codex, Claude Code, and Bun versions. A container runs without the Docker socket or host directory mounts, as user `node`, with a read-only root filesystem, dropped capabilities, no privilege escalation, a PID limit, 2 CPUs, and 4 GB memory. Workspace and home volumes plus a bounded temporary filesystem remain writable. These are workspace defaults. Settings and per-task overrides control writable versus read-only workspaces, CPU, memory, process limits, and Internet versus provider-only networking. A launched turn retains its recorded limits; edits affect the next turn. Provider-only networking uses an isolated Docker bridge and a credential-free TLS proxy with an exact provider allowlist. See [sandbox runtime](sandbox-runtime.md) for enforcement and verification details. The daemon uses the inspected immutable image ID for each launch.
+
+Codex emits structured output through `codex exec --json`, and resumes its returned session on follow-up. Claude Code uses its noninteractive stream and resume interface. Agent permission prompts are disabled only within this external Docker boundary. This is an autonomous task runner, not an approval-gated terminal.
+
+Preparation precedes the first agent session. Successful model completion is followed by the project's verification command. An agent failure produces a failed task; a successful agent with a failed check produces a finished turn and a separate `check_failed` task state, with check output retained. Accepted queued follow-ups continue after a check failure. Existing saved check failures are migrated without changing results or history. A result contains its summary, file changes, binary patch, revisions, and verification result. The output stream is capped at 20 MB, diff capture at approximately 500 KB, and text/image previews at 2 MB. Truncated diffs cannot be exported or applied through the app.
+
+## Local bridge and credentials
+
+The daemon binds to loopback and requires a private bearer token. Next.js keeps this token server-side and checks the browser host, origin, fetch metadata, and an HttpOnly SameSite cookie. Responses are not cacheable. The default local browser session is for this device's user, not a multi-user security boundary.
+
+## Machines
+
+The local web server maintains a private, atomically written `machines.json` registry. Registered daemons use HTTPS origins or loopback SSH tunnels. Each daemon exposes an authenticated, persistent `machine-id`; registration, connection-file import, and reconnect verify this identity. Remote requests recheck it before forwarding and refuse changed identities or unknown registrations. Tokens never appear in public machine lists, snapshots, task links, or logs. The connection export CLI writes a new owner-only JSON file without printing credentials.
+
+The sidebar and new-task composer select a machine workspace. A `machine` URL query parameter pins that workspace across navigation, fresh task links, API calls, event streams, and patch downloads. Projects, model catalogs, settings, provider connections, skills, MCP servers, task queues, and Git actions all come from that daemon. Switching performs a full navigation to clear stale workspace state. An unsent home prompt carries across machine switches; task and project drafts are scoped to the machine. Registration management remains available if the selected daemon is offline, including when opening the app without a prior browser session. Removing a registration leaves remote tasks and Docker resources intact.
+
+This is direct connectivity between the local Nerilo web server and independent daemons. It does not migrate tasks, synchronize accounts, combine every machine's sidebar, install remote services automatically, or provide a hosted relay. See [machine setup](machines.md).
+
+## Provider credentials
+
+API keys are stored in macOS Keychain, or supplied through environment variables on other platforms. An explicitly imported login takes precedence over an inherited API key. Importing Codex writes an owner-only local copy, supplies it to the selected container, and removes the container credential file after model execution. Codex refreshes inside a container are not synchronized back to the imported copy.
+
+**Use existing Claude Code login** explicitly copies this device user's existing Claude subscription login into storage used by the unmodified official CLI. On macOS, lookup targets Claude Code's exact Keychain service and account; it falls back to its `.credentials.json` file. Configured Claude credential directories are respected. No broad Keychain search is performed. The import validates the OAuth record, passes it through subprocess stdin, checks authentication with the official CLI in ephemeral storage, then atomically writes a mode-0600 credential file into Nerilo's dedicated Claude auth volume. Credential values are not returned to the browser, passed as command arguments, or logged. See Claude Code's [documented credential storage](https://code.claude.com/docs/en/authentication#credential-management).
+
+The official Claude CLI manages refreshes in that persistent auth volume. Each task has separate Claude project/session storage; ephemeral suggestions retain no conversation session. Nerilo does not overwrite refreshed credentials during polling or subsequent launches and never writes them back to the host Keychain or credential file. Expired or revoked imported logins require explicit refresh in Settings. Import and disconnect refuse while a running container uses the auth volume. Disconnecting an imported Claude login deletes only the container credential copy and never calls logout or revokes the shared login. The original host storage is left untouched. A separate Claude sign-in flow remains available through the official CLI; disconnecting that separately created login uses the CLI's logout command.
+
+Agent processes can access their own credentials, and model providers receive the selected task context. The separate verification container is created without agent credentials.
+
+## Review and lifecycle
+
+Patch application requires the latest reviewed result, a non-running task, a complete diff, and a clean host checkout whose HEAD still matches the initial snapshot. The daemon checks the patch before applying it. It does not commit or push. Applying does not rebase the task's base snapshot; further work on an already applied task may require manual patch reconciliation or a new task.
+
+Export project reconstructs the reviewed turn from its saved source bundle and complete patch in a fresh `checkouts/` folder. Each copy has its own local branch and no upstream remote. Repeating this action creates a new folder and preserves any edits in previous copies. The export confirmation provides a copyable path. Git actions prepare the required working copy automatically, so everyday task controls do not expose internal checkout paths. Older tasks without saved bundles fetch their pinned base from the local project or PR repository. Dependency folders and container-home data are not exported. Local edits in these copies are not synchronized back into the agent workspace. Tasks started with local changes use checkout creation or patch export for review, because their synthetic snapshot differs from the original project's HEAD.
+
+Archive is reversible and retains files and history. Right-click task deletion removes task-owned containers, networks, workspace/home/session volumes, saved bundles, records and replay-cache entries. Exported projects remain intact. Cleanup failure preserves an archived history for retry. There is no packaged daemon installer, auto-start service, remote scheduler, GitHub event receiver, director, or multi-agent workflow engine.
+
+## Verification
+
+- Strict TypeScript checks, including unused bindings.
+- Unit checks for transactional/idempotent commands, event cursors, and daemon bearer authentication.
+- Docker smoke checks for host isolation, daemon restart recovery, duplicate submissions, follow-up persistence, pause/resume, verification failure, file previews and path rejection, and patch application with dirty-checkout protection.
+- Browser checks for project setup, task creation, rename, file preview, collapsed turns, task actions, and diff review.
+- Two successful real Codex turns using the existing local login, confirmed to share one session ID and pass the project check. The host example project remains separate from the task's changes.
+- Existing Claude Code login import was verified against the official container CLI. A live response using the `haiku` alias and structured AI state-summary generation both succeeded; the host CLI remained authenticated afterward. A subsequent live Nerilo task created a file, passed independent verification, resumed the same native session for a second editing turn, and passed again. See [the lifecycle record](lifecycle-demo.md).
+- Real Chrome WebGPU highlighting was verified on command text and a diff, with no browser console errors or horizontal page overflow. Focused tests cover exact text preservation and malformed token rejection.
+- Self-development verified with a real Codex task against Nerilo's uncommitted source: two-file validation fix, five added tests, passing container verification, and a local checkout that passed all 15 tests plus TypeScript on macOS. The reviewed patch was incorporated into the app. See [dogfooding workflow](dogfooding.md).
+
+## Linked pull requests
+
+Tasks can link up to eight GitHub PRs. The daemon reads them with the existing host GitHub CLI login and refreshes links on unarchived tasks periodically. It stores lifecycle, independent review/check states, conflicts, branches, and the last read status. Failed reads retain the prior values and mark them unavailable. Linking and unlinking change only Nerilo’s local task metadata. Background refresh does not send GitHub comments, reviews, merges, or new PRs. Explicit task Git actions can push and create a PR. Status refresh alone does not trigger execution; the separate opt-in Autopilot workflow described below follows PR events. See [sidebar decisions](sidebar-and-pr-direction.md).
+
+## PR workspaces and agent settings
+
+The project menu discovers the latest 50 open PRs from a GitHub `origin` remote through the host's `gh` login. Search filters that loaded set. HTTPS and standard SSH GitHub remotes are supported. Private repositories use the same host login; GitHub credentials are not copied into agent containers.
+
+Starting work from a PR validates repository ownership, reads its head and base commit IDs, and saves both with the task. Preparation fetches these exact revisions into a temporary bare repository and builds a self-contained bundle. The container starts at the pinned head and retains the comparison base. A later push cannot silently change this task's starting code. The user's Git checkout and refs remain untouched. Linking a PR to an existing task only adds status metadata and does not change that task's source. PR tasks cannot include local working changes. Patch application still requires a clean checkout at the task's starting commit.
+
+Provider, model, and effort are editable on new and existing tasks. Each launched turn stores an immutable execution configuration, including changes made while the daemon prepares a container. New settings apply on the next launch. Native sessions resume within the same provider. Provider switches start a fresh session with the existing workspace and up to 60,000 characters of prior prompts and result summaries. Resetting a previously explicit model or effort to Default also starts a fresh session so stale native overrides cannot persist. Preparation commands run only for the first workspace preparation, not on every provider switch.
+
+Codex model choices and supported effort levels come from the container CLI's model cache, retained after a Codex run. Default and custom model IDs remain available without a cache. Claude offers Fable 5.1 and Fable 5 by explicit model ID, CLI family aliases, and a custom ID entry. Fable supports low, medium, high, extra high, and max effort. Available models still depend on the connected account and the installed container CLI. The runner passes Codex effort through `model_reasoning_effort` and Claude effort through `--effort`; see [Codex configuration](https://learn.chatgpt.com/docs/config-file/config-reference) and [Claude CLI flags](https://code.claude.com/docs/en/cli-reference).
+
+Completed turns retain their own provider identity. The home composer, follow-up composer, and PR task dialog share the same model picker.
+
+Verification includes a real GitHub PR discovery and pinned-head Docker run in an isolated test database, a local Git test where the source advances after the saved PR revision, and a Docker test that changes providers while a turn runs and continues after a daemon restart. Test fixtures are removed without changing the user's tasks.
+
+A live Codex test changed from `gpt-5.5` at low effort to `gpt-5.6-luna` at medium effort. Both turns exited successfully, retained the same session ID, and recalled the preceding response. The container catalog correctly excluded a desktop-only model that the ChatGPT login rejected. Claude provider handoff is container-fixture verified; live imported authentication, two editing turns, same-session resumption and independent checks were also verified as described above.
+
+## Task Git actions and AI metadata
+
+The task header opens Git actions against the latest Nerilo-managed local checkout. Branch creation and commit review include all tracked and untracked changes, excluding ignored files. A separate index preserves staging during review. A token covering HEAD, branch, and the complete reviewed tree rejects stale operations. Commits use the source project's Git identity and commit exactly that tree; commit hooks and signing are not run. Merge, rebase, cherry-pick, revert, and unresolved-index states must be finished outside Nerilo first. The source checkout is never committed by these controls.
+
+Push is explicit and never forced. PR creation requires the exact local HEAD to have been pushed, accepts an editable base, title and body, and links the resulting PR to the task sidebar. Publishing is blocked for synthetic local-working-snapshot ancestry. Focused tests cover stale review tokens, empty-commit PR guards, snapshot ancestry and exact-head publication. A real repository lifecycle demonstration also exercised publication and recovery; see [the demo record](lifecycle-demo.md). Local branch and commit actions were exercised through the browser in a temporary checkout.
+
+AI Git drafting uses the connected provider to propose editable fields. Automatic task names apply only to tasks created without an explicit title; manual and legacy names are preserved unless **Rename with AI** is selected. A manual rename made while generation is in flight wins over its result. Completed turns gain a concise request summary used only when collapsed. Original prompts and responses remain intact. Suggestions use an ephemeral container with no workspace mount or retained session, bounded execution and validated structured output. Claude's CLI receives draft-7 JSON schemas; Codex retains draft-2020-12. Suggestion failures do not affect completed work. Existing history is not automatically backfilled.
+
+Current task-state summaries are separate from titles and collapsed request summaries. They describe the current action, observed outcome, or blocker in one sentence of at most 180 characters, using the turn prompt, recent activity, result, and verification evidence. Active tasks request updates no more than once every 45 seconds; finalization requests a final update. Requests are deduplicated, unchanged evidence is skipped, and results from an older turn or task phase cannot overwrite current state. Generation does not block execution. Summaries live in a separate SQLite table and appear as quiet text above the conversation. The read endpoint never triggers inference. Existing completed tasks remain without a state summary until a subsequent run; failed generation does not alter task content or status.
+
+## Syntax rendering
+
+`gpu-lexer` is pinned to version 0.0.2. Visible code loads a client worker on demand, where the package performs WebGPU inference. Markdown code, file previews, diffs, and terminal commands share the renderer. Raw terminal output remains plain text. The package has no CPU fallback: unavailable WebGPU, worker errors, and timeouts resolve to unchanged plain text rather than a different highlighting library.
+
+Inference is limited to the first 80,000 UTF-16 code units, with the remaining text left plain. Returned token classes, integer offsets, ordering, overlap, bounds, and Unicode surrogate boundaries are validated before React renders text spans. No generated HTML is inserted. Diff line gutters and addition/removal backgrounds remain separate from syntax colors; copying preserves the original text, including a missing final newline. Worker requests and cached results are bounded, and a stalled worker falls back after 15 seconds. The upstream lexer is experimental and language-agnostic, so highlighting is a visual aid rather than a parser guarantee.
+
+## Project archive and deletion
+
+Project menus in the sidebar and Projects list offer Archive and Delete. Archived projects move to Projects → Archived, where their tasks remain readable and the project can be restored. Archiving pauses queued work and Autopilot; restoration does not resume it or change individual task archive flags. Running agents and in-flight Git actions must finish or pause first.
+
+Deletion confirms its scope and removes the project's Nerilo tasks, history, notes, managed sandboxes and ordering records. Local repository folders, exported work and GitHub repositories remain untouched. Incomplete cleanup leaves the project archived and retryable. Archived and deleting projects reject new work, including task creation that was already validating asynchronously.
+
+Validated with 112 passing tests, typechecking, formatting and a production build. Isolated browser checks covered archive, archived task access, restore with pending inputs retained, and deletion retry after Docker was stopped. Fixture deletion preserved an unrelated project and the local repository folder.
+
+## Queue and follow-up scheduling
+
+Queued inputs persist with stable IDs and optional delivery times. Editing, removing, promoting, and reordering do not interrupt the active turn. The scheduler picks the first due message and rechecks the latest queue after asynchronous preparation checks, so future entries do not block ready work and stale edits cannot resurrect consumed inputs. Deliver next clears a message’s schedule. Dragging or Alt + Up/Down changes queue order. A local date picker offers quick times and explicit dates; times are saved as UTC instants and shown in the user’s timezone. Sleeping devices run overdue work after resuming.
+
+## Opt-in PR Autopilot
+
+New tasks or existing task controls can select Manual, Open PR, or Through merge. Autopilot is limited to committed GitHub source. It owns a task branch, prepares an exact reviewed tree with the user’s Git identity, commits and pushes it, opens or reuses its PR, and watches feedback plus checks on the current head. Review comments, changes-requested reviews, failed check logs, merge conflicts, and base updates become bounded agent follow-ups. Generated follow-ups have concise labels; full instructions remain available separately.
+
+The observer reads branch protection and active rulesets, required check names and GitHub App IDs, review requirements, unresolved threads, current base revision, merge state and squash support. Unknown or incomplete evidence blocks merging. A non-strict branch preserves an in-progress CI run before an optional base update. Strict freshness or conflicts require a base update. The agent resolves code conflicts; the daemon publishes only with an exact lease against its own previous head. Ordinary pushes are never forced.
+
+Through merge waits for checks and review requirements, allows a short settling interval, then reads GitHub again and submits a squash merge constrained to the verified head SHA. GitHub enforces repository rules. The workflow does not approve reviews or bypass required checks. An unavailable required approval remains blocked.
+
+Prepared commit, confirmed publication, PR creation and feedback acknowledgment are persisted checkpoints. Uncertain results are read back before retrying to prevent duplicate commits, PRs, comments or merges. External branch edits and synthetic snapshot ancestry block publication. Concurrent task mutations are excluded while publishing or synchronizing the workspace. Repeated operation failures back off and stop after three failures; re-enabling Autopilot resets that counter. Agent repair loops stop after twelve turns for review. These are local polling workflows: the daemon and Docker must remain running.
+
+
+## UI and repository history review, 10 September 2026
+
+Task history places review feedback, CI results, branch/commit/publication and merge events between agent turns. Each turn has one provider-marked expandable request row. Repository event records preserve the observed author, body, source URL, revision and timestamp where available. Event IDs deduplicate polling and survive daemon restarts. Turns are ordered by start time, including imported history. Older tasks use only recognizable recorded events and generated Autopilot evidence; missing historical events are not invented.
+
+Both Autopilot and the ordinary linked-PR refresh capture repository history. Detailed observation does not enable Autopilot or enqueue agent work. The existing refresh cadence is retained, and active Autopilot observations are not repeated by the general refresh. Feedback details expand inline and link to their GitHub source.
+
+The task header's Changes action opens a side panel on desktop and a focused drawer on narrow screens. It combines file review with the relevant next Git action. Branch, commit, push and PR validation remain on the daemon. AI suggestions prioritize the current reviewed diff; older task summaries are background context. A separate remote comparison runs when eligible changes are opened, refreshed, or committed/published. It reports unpublished, synced, ahead, behind, diverged, or unavailable using the host GitHub CLI login. Missing history is fetched without changing branches, tracking refs, staging, working files, or FETCH_HEAD. Local and remote revisions are checked again before returning a result. Incomplete shallow history and failed remote reads are unavailable, never guessed as unpublished. Push is offered for unpublished/ahead branches; PR creation requires the checked remote head to equal the reviewed local head. The server still rechecks publication before creating a PR. This compares the task branch with its remote counterpart, not with the PR base branch.
+
+Home keeps project, starting branch and model together. Working-file snapshots live in the branch menu; agent presets and the finish line live in a compact task menu. Settings groups Connections, Environment and Appearance. Shared dialogs have a bounded scrolling body, visible footer and keyboard focus containment. New projects begin with GitHub or local-folder source and can infer a name from it.
+
+Light-mode syntax uses darker ink colors with at least 4.5:1 contrast on the paper, code, addition and deletion surfaces. WebGPU rendering and exact source preservation are unchanged. A real Fable 5.1 structured request succeeded through the existing imported Claude login using the installed Claude Code 2.1.259. Model IDs and effort support were verified against [Claude's model configuration](https://code.claude.com/docs/en/model-config) and [effort documentation](https://platform.claude.com/docs/en/build-with-claude/effort).
