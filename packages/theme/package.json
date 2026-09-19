@@ -1,0 +1,37 @@
+{
+  "name": "@nerilo/theme",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/nerilo.d.ts",
+      "import": "./dist/nerilo.js"
+    },
+    "./theme.css": "./dist/nerilo.css"
+  },
+  "scripts": {
+    "build": "astryx theme build src/nerilo.ts --out dist/nerilo.css",
+    "check": "astryx theme build src/nerilo.ts --out dist/nerilo.css --check",
+    "astryx": "node node_modules/@astryxdesign/cli/clients/cli/bin/astryx.mjs",
+    "preview:dev": "bun --bun node_modules/next/dist/bin/next dev preview --hostname 127.0.0.1 --port 5184",
+    "preview:build": "bun --bun node_modules/next/dist/bin/next build preview",
+    "preview:start": "bun --bun node_modules/next/dist/bin/next start preview --hostname 127.0.0.1 --port 5184"
+  },
+  "peerDependencies": {
+    "@astryxdesign/core": "0.5.4"
+  },
+  "devDependencies": {
+    "@astryxdesign/cli": "0.5.4",
+    "@astryxdesign/core": "0.5.4",
+    "@stylexjs/stylex": "0.19.0",
+    "@types/node": "26.5.0",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "typescript": "7.0.2"
+  }
+}

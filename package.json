@@ -1,0 +1,28 @@
+{
+  "name": "nerilo",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "daemon": "bun apps/daemon/src/index.ts",
+    "web": "bun --bun apps/web/node_modules/next/dist/bin/next dev apps/web --hostname 127.0.0.1 --port ${NERILO_WEB_PORT:-5185}",
+    "build": "bun run --cwd packages/theme build && bun --bun apps/web/node_modules/next/dist/bin/next build apps/web",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
+    "test": "bun test --preload ./scripts/test-setup.ts apps/daemon/src apps/web/src/lib containers",
+    "image:build": "docker build -t nerilo-agent:1 -f containers/Dockerfile containers",
+    "test:docker": "bun scripts/docker-smoke.ts",
+    "format": "prettier --write apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json",
+    "format:check": "prettier --check apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "26.5.0",
+    "prettier": "3.9.6",
+    "typescript": "7.0.2"
+  }
+}
