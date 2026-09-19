@@ -22,8 +22,6 @@ jobs:
     name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      NERILO_DATA_DIR: ${{ runner.temp }}/nerilo-quality
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -36,6 +34,8 @@ jobs:
       - run: bun run typecheck
       - run: bun run --cwd packages/theme check
       - run: bun run build
+        env:
+          NERILO_DATA_DIR: ${{ runner.temp }}/nerilo-quality
       - name: Check generated theme consistency
         run: git diff --exit-code -- packages/theme/dist
 
