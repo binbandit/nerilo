@@ -1,0 +1,255 @@
+@layer nerilo-app {
+  .task-steps-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    padding: 3px 0 3px 8px;
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .disclosure-chevron {
+    flex-shrink: 0;
+    transition: transform 120ms ease;
+  }
+  .task-steps-trigger[aria-expanded="true"] > .disclosure-chevron,
+  .task-step[open] > summary > .disclosure-chevron,
+  .task-verification[open] > summary > .disclosure-chevron {
+    transform: rotate(90deg);
+  }
+  .task-steps {
+    min-width: 0;
+    margin: -5px 0 22px;
+    padding: 2px 0 2px 11px;
+    border-left: 1px solid var(--color-border);
+  }
+  .task-step {
+    min-width: 0;
+    font-size: 12px;
+  }
+  .task-step > summary {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    padding: 7px 3px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    list-style: none;
+  }
+  .task-step > summary:hover,
+  .task-steps-trigger:hover {
+    color: var(--color-text-primary);
+  }
+  .task-step > summary::-webkit-details-marker,
+  .task-verification > summary::-webkit-details-marker {
+    display: none;
+  }
+  .task-step > summary > svg {
+    flex-shrink: 0;
+  }
+  .step-disclosure {
+    opacity: 0;
+  }
+  .task-step > summary:hover > .step-disclosure,
+  .task-step > summary:focus-visible > .step-disclosure,
+  .task-step[open] > summary > .step-disclosure {
+    opacity: 0.75;
+  }
+  .task-step-notice {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 3px;
+    color: var(--color-text-secondary);
+  }
+  .task-step-notice > svg {
+    flex-shrink: 0;
+  }
+  .task-step-notice-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .step-notice-dot {
+    display: grid;
+    place-items: center;
+    flex: 0 0 14px;
+    height: 14px;
+  }
+  .step-notice-dot::before {
+    content: "";
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.6;
+  }
+  .task-step-notice > .terminal-copy {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    opacity: 0;
+  }
+  .task-step-notice:hover > .terminal-copy,
+  .task-step-notice:focus-within > .terminal-copy {
+    opacity: 1;
+  }
+  .task-step-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .task-step-label:has(+ .task-step-detail) {
+    flex-shrink: 0;
+    max-width: 35%;
+  }
+  .task-step-detail {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-primary);
+  }
+  .task-step-detail.code {
+    font: 11px/1.6 var(--font-family-code);
+  }
+  .task-step time {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+  }
+  .task-step.error > summary,
+  .task-step-notice.error,
+  .task-verification.failed > summary > svg:first-child {
+    color: var(--color-error);
+  }
+  .task-verification {
+    margin-top: 24px;
+    min-width: 0;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .task-verification > summary {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    cursor: pointer;
+    list-style: none;
+  }
+  .task-verification > summary > span,
+  .task-verification > summary > svg {
+    flex-shrink: 0;
+  }
+  .task-verification > summary > code {
+    margin-left: auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 11px/1.6 var(--font-family-code);
+  }
+  .task-verification.passed > summary > svg:first-child {
+    color: var(--color-success);
+  }
+  .task-terminal {
+    min-width: 0;
+    overflow: hidden;
+    margin: 8px 0 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-background-muted);
+  }
+  .terminal-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 31px;
+    padding: 0 11px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 11px;
+    color: var(--color-text-secondary);
+  }
+  .terminal-copy {
+    display: grid;
+    place-items: center;
+    margin-left: auto;
+    width: 25px;
+    height: 25px;
+    border: 0;
+    border-radius: 4px;
+    color: inherit;
+    background: transparent;
+    cursor: pointer;
+  }
+  .terminal-copy:hover {
+    color: var(--color-text-primary);
+    background: var(--color-background-surface);
+  }
+  .task-terminal > .terminal-command,
+  .task-terminal > .terminal-output {
+    margin: 0;
+    padding: 12px 14px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 11.5px/1.7 var(--font-family-code);
+    color: var(--color-text-primary);
+  }
+  .task-terminal > .terminal-command {
+    border-bottom: 1px solid var(--color-border);
+  }
+  .terminal-command > span {
+    color: var(--color-text-secondary);
+    user-select: none;
+  }
+  .task-terminal > .terminal-output {
+    max-height: 360px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .terminal-empty {
+    padding: 12px 14px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .turn-prompt-short {
+    display: none;
+  }
+  .turn-card:not([open]) .turn-prompt-short {
+    display: block;
+  }
+  .turn-card:not([open]) .turn-prompt-short + .turn-prompt-full {
+    display: none;
+  }
+  @media (max-width: 600px) {
+    .task-verification > summary {
+      flex-wrap: wrap;
+    }
+    .task-verification > summary > code {
+      flex-basis: 100%;
+      padding-left: 21px;
+    }
+    .task-step time {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .disclosure-chevron {
+      transition: none;
+    }
+  }
+  @media (hover: none), (pointer: coarse) {
+    .step-disclosure,
+    .task-step-notice > .terminal-copy {
+      opacity: 0.65;
+    }
+  }
+}

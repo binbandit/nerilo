@@ -1,0 +1,52 @@
+@layer nerilo-app {
+  .mcp-settings-heading {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .mcp-settings-heading > button {
+    flex-shrink: 0;
+  }
+  .mcp-settings-row h3 {
+    overflow-wrap: anywhere;
+  }
+  .mcp-settings-empty {
+    margin: 0;
+    padding: 28px 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .mcp-settings-values summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .mcp-settings-values summary::-webkit-details-marker {
+    display: none;
+  }
+  .mcp-settings-values summary > svg {
+    transform: rotate(-90deg);
+  }
+  .mcp-settings-values[open] summary > svg {
+    transform: rotate(0);
+  }
+  .mcp-settings-values textarea {
+    font-family: var(--font-family-code, monospace);
+    font-size: 12px;
+  }
+  .mcp-settings-notice {
+    display: block;
+    margin-top: 16px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  @media (max-width: 480px) {
+    .mcp-settings-heading {
+      flex-wrap: wrap;
+    }
+  }
+}

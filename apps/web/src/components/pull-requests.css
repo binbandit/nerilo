@@ -1,0 +1,170 @@
+@layer nerilo-app {
+  .pr-peek-list {
+    min-width: 0;
+  }
+  .pr-peek-entry + .pr-peek-entry {
+    border-top: 1px solid var(--color-border);
+  }
+  .pr-peek-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 0 3px;
+  }
+  .pr-peek-link {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    color: var(--color-text-primary);
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  .pr-peek-link:hover {
+    background: var(--color-overlay-hover);
+    text-decoration: none;
+  }
+  .pr-peek-link:focus-visible {
+    outline: 2px solid var(--color-text-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .pr-peek-number {
+    gap: 4px;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    padding: 3px 5px;
+    border-radius: 5px;
+    background: color-mix(in srgb, currentColor 9%, transparent);
+  }
+  .pr-peek-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 24px;
+  }
+  .pr-peek-status {
+    flex-shrink: 0;
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+  }
+  .pr-peek-row .message-copy-control {
+    align-self: center;
+  }
+  .pr-peek-row:hover .message-copy-button,
+  .pr-peek-row:focus-within .message-copy-button {
+    opacity: 1;
+  }
+  .pr-peek-actions {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    padding: 0;
+  }
+  .pr-peek-check-toggle {
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+  }
+  .pr-peek-check-toggle:hover,
+  .pr-peek-check-toggle[aria-expanded="true"] {
+    background: var(--color-overlay-hover);
+  }
+  .pr-peek-check-toggle:focus-visible {
+    outline: 2px solid var(--color-text-accent);
+    outline-offset: 2px;
+  }
+  .pr-peek-checks {
+    padding: 6px 9px 8px;
+    border-top: 1px solid var(--color-border);
+    font-size: 11px;
+  }
+  .pr-peek-checks > div {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 0;
+  }
+  .pr-peek-checks > div svg {
+    flex-shrink: 0;
+  }
+  .pr-peek-checks > div span {
+    overflow-wrap: anywhere;
+  }
+  .pr-peek-updated {
+    display: block;
+    margin-top: 5px;
+    color: var(--color-text-secondary);
+    font-size: 10px;
+  }
+  .pr-peek-status.changes_requested {
+    color: var(--color-error);
+  }
+  .pr-peek-list > .pr-error {
+    margin: 4px 8px;
+  }
+  .pr-trigger {
+    min-width: 24px;
+    min-height: 26px;
+    justify-content: center;
+    gap: 6px;
+    padding-inline: 5px;
+  }
+  .pr-trigger-header {
+    gap: 7px;
+    padding: 5px 8px;
+    font-size: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+  }
+  .pr-trigger:focus-visible {
+    outline: 2px solid var(--color-text-secondary);
+    outline-offset: 2px;
+  }
+  .pr-signals,
+  .pr-signal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+  .pr-signals:empty {
+    display: none;
+  }
+  .pr-signal.open,
+  .pr-signal.approved,
+  .pr-signal.passing,
+  .pr-identity.open {
+    color: var(--color-success);
+  }
+  .pr-signal.merged {
+    color: light-dark(#80609d, #b69acf);
+  }
+  .pr-signal.closed,
+  .pr-signal.failing,
+  .pr-signal.changes_requested,
+  .pr-panel .pr-tone.changes_requested,
+  .pr-panel .pr-identity.closed {
+    color: var(--color-error);
+  }
+  .pr-signal.pending {
+    color: light-dark(#886b34, #d6c58d);
+  }
+  .pr-signal.draft,
+  .pr-extra-count {
+    color: var(--color-text-secondary);
+  }
+  .pr-extra-count {
+    font-size: 10px;
+  }
+}

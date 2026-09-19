@@ -1,0 +1,30 @@
+@layer nerilo-app {
+  .syntax-source .syntax-comment {
+    color: light-dark(#626b64, #a3ada5);
+    font-style: italic;
+  }
+  .syntax-source .syntax-string {
+    color: light-dark(#355b32, #b2c98e);
+  }
+  .syntax-source .syntax-number,
+  .syntax-source .syntax-constant {
+    color: light-dark(#7c4b19, #d6b783);
+  }
+  .syntax-source .syntax-keyword {
+    color: light-dark(#91324c, #e5a8b7);
+  }
+  .syntax-source .syntax-type {
+    color: light-dark(#1d6465, #8fc2be);
+  }
+  .syntax-source .syntax-function {
+    color: light-dark(#28558c, #a4c0e8);
+  }
+  .syntax-source .syntax-operator {
+    color: light-dark(#5c554a, #c6bdac);
+  }
+  .diff .syntax-source .diff-file .syntax-keyword,
+  .diff .syntax-source .diff-file .syntax-string,
+  .diff .syntax-source .diff-hunk .syntax-number {
+    color: inherit;
+  }
+}

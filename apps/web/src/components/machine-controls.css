@@ -1,0 +1,203 @@
+@layer nerilo-app {
+  .machine-picker-trigger {
+    max-width: 220px;
+    min-width: 0;
+  }
+  .machine-picker-trigger > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .machine-menu-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+  }
+  .machine-menu-label > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .machine-menu-label small {
+    margin-left: auto;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+  }
+  .machines-settings {
+    min-width: 0;
+  }
+  .machines-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .machines-heading p {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+  .machines-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .machine-list {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--color-border);
+  }
+  .machine-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+    padding: 17px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .machine-row-icon {
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+  .machine-row-detail {
+    min-width: 0;
+    flex: 1;
+  }
+  .machine-row-name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .machine-row-name strong {
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+  .machine-row-name > span {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+  }
+  .machine-row-detail p {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 4px 0 0;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .machine-status-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+  .machine-status-dot.online {
+    background: var(--color-success);
+  }
+  .machine-row-detail .machine-connection-error {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+  .machine-description {
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .machine-import {
+    margin-left: -8px;
+  }
+  .machine-refreshing {
+    animation: machine-spin 1s linear infinite;
+  }
+  @keyframes machine-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .machine-refreshing {
+      animation: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .machines-heading {
+      flex-wrap: wrap;
+    }
+  }
+}
+@layer nerilo-app {
+  .sidebar-machine {
+    padding: 2px 12px 10px;
+    min-width: 0;
+  }
+  .sidebar-machine .machine-picker-trigger {
+    max-width: 100%;
+    justify-content: flex-start;
+  }
+}
+@layer nerilo-app {
+  .machine-setup summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    cursor: pointer;
+  }
+  .machine-setup summary::-webkit-details-marker {
+    display: none;
+  }
+  .machine-setup summary > svg {
+    transform: rotate(-90deg);
+  }
+  .machine-setup[open] summary > svg {
+    transform: rotate(0);
+  }
+  .machine-setup ol {
+    padding-left: 18px;
+    margin: 14px 0 0;
+  }
+  .machine-setup li {
+    padding-left: 4px;
+    margin-bottom: 16px;
+  }
+  .machine-setup li:last-child {
+    margin-bottom: 0;
+  }
+  .machine-setup li > strong {
+    font-weight: 500;
+  }
+  .machine-setup li > p {
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+    font-size: 12px;
+  }
+  .machine-setup-command {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+  .machine-setup-command pre {
+    flex: 1;
+    min-width: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin: 0;
+    font: 12px/1.6 var(--font-family-code, monospace);
+  }
+  .machine-setup-command .message-copy-button {
+    opacity: 1;
+  }
+}

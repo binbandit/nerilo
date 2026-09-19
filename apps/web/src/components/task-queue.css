@@ -1,0 +1,223 @@
+@layer nerilo-app {
+  .task-queue {
+    margin-top: 28px;
+    padding: 12px 0;
+    border-top: 1px solid var(--color-border);
+    font-size: 12px;
+    min-width: 0;
+  }
+  .task-queue-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+  }
+  .task-queue-heading > span {
+    font-size: 11px;
+  }
+  .task-queue-row {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    min-width: 0;
+    padding: 6px 0;
+  }
+  .task-queue-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .task-queue-row[data-drop="before"]::before,
+  .task-queue-row[data-drop="after"]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-text-accent);
+    border-radius: 2px;
+  }
+  .task-queue-row[data-drop="before"]::before {
+    top: -1px;
+  }
+  .task-queue-row[data-drop="after"]::after {
+    bottom: -1px;
+  }
+  .task-queue-time {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .task-queue-drag {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 26px;
+    flex: 0 0 18px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: grab;
+  }
+  .task-queue-drag:active {
+    cursor: grabbing;
+  }
+  .task-queue-drag:disabled {
+    cursor: default;
+    opacity: 0.35;
+  }
+  .task-composer-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+  }
+  .queue-schedule-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 26px;
+    min-height: 26px;
+    padding: 4px 6px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .queue-schedule-trigger:hover {
+    background: var(--color-background-muted);
+    color: var(--color-text-primary);
+  }
+  .queue-schedule-trigger.scheduled {
+    color: var(--color-text-accent);
+  }
+  .queue-schedule-trigger.compact {
+    padding: 0;
+    justify-content: center;
+  }
+  .queue-schedule-trigger:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .task-queue-preview {
+    flex: 1;
+    min-width: 0;
+  }
+  .task-queue-preview > summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+    cursor: pointer;
+    line-height: 26px;
+    color: var(--color-text-secondary);
+  }
+  .task-queue-preview > summary::-webkit-details-marker {
+    display: none;
+  }
+  .task-queue-preview > summary > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .task-queue-preview > summary > svg {
+    flex-shrink: 0;
+    opacity: 0;
+  }
+  .task-queue-preview > summary:hover > svg,
+  .task-queue-preview > summary:focus-visible > svg,
+  .task-queue-preview[open] > summary > svg {
+    opacity: 0.7;
+  }
+  .task-queue-preview > summary:hover {
+    color: var(--color-text-primary);
+  }
+  .task-queue-preview[open] > summary > svg {
+    transform: rotate(90deg);
+  }
+  .task-queue-preview[open] > summary {
+    align-items: flex-start;
+  }
+  .task-queue-preview[open] > summary > span {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .task-queue-preview[open] > summary > svg {
+    margin-top: 7px;
+  }
+  .task-queue-preview > p {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.65;
+    margin: 4px 0 8px;
+  }
+  .task-queue-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2px;
+  }
+  .task-queue-actions > button {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .task-queue-actions > button:hover {
+    background: var(--color-background-muted);
+    color: var(--color-text-primary);
+  }
+  .task-queue-actions > button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .task-queue-editor {
+    display: grid;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .task-queue-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+  .task-queue-error {
+    font-size: 12px;
+    color: var(--color-error);
+    overflow-wrap: anywhere;
+  }
+  .task-queue-announcement {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .task-queue-row:not(:hover):not(:focus-within) .task-queue-actions {
+      opacity: 0;
+    }
+    .task-queue-row:not(:hover):not(:focus-within) .task-queue-drag {
+      opacity: 0;
+    }
+  }
+  @media (hover: none) {
+    .task-queue-preview > summary > svg {
+      opacity: 0.7;
+    }
+  }
+}

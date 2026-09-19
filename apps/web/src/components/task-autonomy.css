@@ -1,0 +1,23 @@
+.autopilot-choices {
+  width: 100%;
+}
+.nerilo-app .autopilot-choices input[type="radio"]:focus-visible {
+  outline: none;
+}
+.autopilot-status {
+  margin: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.autopilot-pr-link {
+  color: var(--color-text-accent);
+  font-size: 12px;
+  text-decoration: none;
+}
+.autopilot-pr-link:hover {
+  text-decoration: underline;
+}

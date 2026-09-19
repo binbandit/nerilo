@@ -1,0 +1,8 @@
+@layer nerilo-app {
+  .task-state-summary {
+    margin: 0 0 18px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+}

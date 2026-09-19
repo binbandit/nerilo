@@ -1,0 +1,65 @@
+@layer nerilo-app {
+  .nerilo-app :is(button, a, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-text-accent);
+    outline-offset: 3px;
+  }
+  .nerilo-app #main:focus {
+    outline: none;
+  }
+  .nerilo-app :is(pre, [data-keyboard-region]) {
+    scroll-margin-block: 16px;
+  }
+  .keyboard-guide {
+    display: grid;
+    gap: 24px;
+  }
+  .keyboard-guide h3 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 9px;
+  }
+  .keyboard-guide dl {
+    margin: 0;
+  }
+  .keyboard-guide dl > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 5px 0;
+  }
+  .keyboard-guide dt {
+    font-size: 13px;
+  }
+  .keyboard-guide dd {
+    margin: 0;
+    text-align: right;
+  }
+  .keyboard-guide kbd + kbd::before {
+    content: " / ";
+    padding-inline: 5px;
+  }
+  .keyboard-guide kbd {
+    font-family: inherit;
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--color-text-secondary);
+  }
+  .keyboard-guide p {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  @media (max-width: 420px) {
+    .keyboard-guide dl > div {
+      gap: 8px;
+    }
+    .keyboard-guide dt,
+    .keyboard-guide kbd + kbd::before {
+      content: " / ";
+      padding-inline: 5px;
+    }
+    .keyboard-guide kbd {
+      font-size: 11px;
+    }
+  }
+}

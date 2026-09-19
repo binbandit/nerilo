@@ -1,0 +1,69 @@
+@layer nerilo-app {
+  .home-content .composer-options {
+    gap: 2px;
+    min-width: 0;
+    align-items: center;
+  }
+  .composer-branch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    min-width: 0;
+    max-width: 180px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .composer-branch span {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .composer-branch svg {
+    flex-shrink: 0;
+  }
+  .starting-point-trigger {
+    max-width: 205px;
+    color: var(--color-text-secondary);
+  }
+
+  .start-option-row small {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+  }
+  .start-option-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .start-option-hint {
+    margin: 6px 12px 8px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+  }
+  .home-task-options {
+    color: var(--color-text-secondary);
+  }
+  @media (max-width: 600px) {
+    .home-content .composer-options {
+      gap: 0;
+    }
+    .home-content .composer-options button {
+      font-size: 12px;
+    }
+    .home-start-button {
+      width: 36px;
+      min-width: 36px;
+      padding-inline: 0;
+    }
+    .home-start-button > span:first-child > span:nth-child(2) {
+      display: none;
+    }
+    .starting-point-trigger {
+      max-width: 155px;
+    }
+  }
+}

@@ -1,0 +1,26 @@
+@layer nerilo-app {
+  .compact-picker-option {
+    min-height: 30px;
+    padding: 5px 8px;
+  }
+  .compact-picker-option .astryx-text {
+    font-size: 12px;
+    line-height: 20px;
+  }
+  .compact-picker-option .astryx-dropdown-menu-radio {
+    display: none;
+  }
+  .compact-picker-check {
+    display: inline-grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    color: var(--color-text-secondary);
+  }
+  .compact-picker-meta {
+    font-size: 11px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-secondary);
+  }
+}

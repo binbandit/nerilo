@@ -1,0 +1,241 @@
+@layer nerilo-app {
+  .nerilo-app .task-layout.with-file-browser {
+    grid-template-columns: minmax(0, 1120px);
+  }
+  .workspace-browser {
+    min-width: 0;
+    margin-bottom: 24px;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--color-background-surface);
+  }
+  .workspace-browser-toolbar,
+  .workspace-preview-header,
+  .workspace-preview-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    min-height: 42px;
+  }
+  .workspace-browser-toolbar {
+    border-bottom: 1px solid var(--color-border);
+    justify-content: space-between;
+  }
+  .workspace-browser-title {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .workspace-file-filters button,
+  .workspace-file-notice button {
+    border: 0;
+    border-radius: 4px;
+    padding: 4px 6px;
+    color: var(--color-text-secondary);
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+  }
+  .workspace-file-filters button:hover,
+  .workspace-file-notice button:hover {
+    background: var(--color-overlay-hover);
+  }
+  .workspace-file-filters [aria-pressed="true"] {
+    color: var(--color-text-primary);
+    font-weight: 500;
+  }
+  .workspace-browser-panes {
+    display: grid;
+    grid-template-columns: minmax(230px, 30%) minmax(0, 1fr);
+    height: clamp(360px, 58dvh, 700px);
+  }
+  .workspace-browser-navigation,
+  .workspace-file-preview {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+  .workspace-browser-navigation {
+    border-right: 1px solid var(--color-border);
+    background: var(--color-background-body);
+  }
+  .workspace-file-search {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 12px 10px 6px;
+    padding: 6px 7px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-background-surface);
+    color: var(--color-text-secondary);
+  }
+  .workspace-file-search:focus-within {
+    outline: 2px solid var(--color-text-accent);
+    outline-offset: 1px;
+  }
+  .workspace-file-search input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    color: var(--color-text-primary);
+  }
+  .workspace-file-search input:focus {
+    outline: none;
+  }
+  .workspace-file-search input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .workspace-file-search button {
+    display: flex;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  .workspace-file-filters {
+    display: flex;
+    gap: 4px;
+    padding: 0 10px 8px;
+    font-size: 11px;
+  }
+  .workspace-file-filters [aria-pressed="true"] {
+    background: var(--color-overlay-hover);
+  }
+  .workspace-file-tree {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .workspace-pierre-tree {
+    --trees-bg-override: var(--color-background-body);
+    --trees-fg-override: var(--color-text-primary);
+    --trees-fg-muted-override: var(--color-text-secondary);
+    --trees-bg-muted-override: var(--color-overlay-hover);
+    --trees-selected-bg-override: var(--color-overlay-hover);
+    --trees-selected-fg-override: var(--color-text-primary);
+    --trees-accent-override: var(--color-text-accent);
+    --trees-border-color-override: var(--color-border);
+    --trees-focus-ring-color-override: var(--color-text-accent);
+    --trees-selected-focused-border-color-override: var(--color-text-accent);
+    --trees-font-family-override: var(--font-family-body);
+    --trees-font-size-override: 12px;
+    --trees-git-modified-color-override: var(--color-text-accent);
+    --trees-git-added-color-override: var(--color-success);
+    --trees-git-untracked-color-override: var(--color-success);
+    --trees-git-renamed-color-override: var(--color-text-accent);
+    --trees-scrollbar-thumb-override: var(--color-border);
+  }
+  .workspace-tree-empty {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    right: 12px;
+    pointer-events: none;
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .workspace-file-empty,
+  .workspace-file-notice {
+    padding: 10px;
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .workspace-file-notice button {
+    display: block;
+    margin-top: 6px;
+  }
+  .workspace-preview-header {
+    border-bottom: 1px solid var(--color-border);
+  }
+  .workspace-preview-header > span:first-child {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .workspace-browser .message-copy-button {
+    opacity: 1;
+  }
+  .workspace-browser .message-copy-control {
+    align-self: center;
+  }
+  .workspace-preview-content {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  .workspace-preview-content pre {
+    min-height: 100%;
+    width: max-content;
+    min-width: 100%;
+    margin: 0;
+    padding: 18px;
+    font: 12px/1.75 var(--font-family-code);
+    tab-size: 2;
+  }
+  .workspace-preview-content pre:focus-visible {
+    outline-offset: -2px;
+  }
+  .workspace-preview-content img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    padding: 18px;
+  }
+  .workspace-preview-footer {
+    justify-content: space-between;
+    min-height: 34px;
+    padding-block: 5px;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: 11px;
+  }
+  .workspace-preview-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 28px;
+    color: var(--color-text-secondary);
+    text-align: center;
+    font-size: 13px;
+  }
+  .workspace-preview-empty p {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 760px) {
+    .workspace-browser-panes {
+      grid-template-columns: minmax(140px, 34%) minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 520px) {
+    .workspace-browser-panes {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 220px minmax(300px, 1fr);
+      height: 75dvh;
+      min-height: 520px;
+    }
+    .workspace-browser-navigation {
+      border-right: 0;
+      border-bottom: 1px solid var(--color-border);
+    }
+  }
+}

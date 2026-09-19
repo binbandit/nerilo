@@ -1,0 +1,74 @@
+@layer nerilo-app {
+  .nerilo-dialog {
+    max-width: calc(100vw - 32px);
+  }
+  .nerilo-dialog-frame {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 40px);
+    min-width: 0;
+  }
+  .nerilo-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 16px 12px 20px;
+    flex-shrink: 0;
+  }
+  .nerilo-dialog-header h2 {
+    margin: 0;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.4;
+  }
+  .nerilo-dialog-body {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 4px 20px 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .nerilo-dialog-body .form-stack {
+    gap: 16px;
+  }
+  .nerilo-dialog-body p {
+    margin: 0;
+  }
+  .nerilo-dialog-body details {
+    font-size: 13px;
+  }
+  .nerilo-dialog-body details > summary {
+    color: var(--color-text-secondary);
+  }
+  .nerilo-dialog-body details > .form-stack {
+    margin-top: 12px;
+    padding: 0;
+  }
+  .nerilo-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    padding: 12px 20px;
+    border-top: 1px solid var(--color-border);
+    background: transparent;
+  }
+  @media (max-width: 560px) {
+    .nerilo-dialog-header {
+      padding: 16px 14px 12px 18px;
+    }
+    .nerilo-dialog-body {
+      padding: 4px 18px 20px;
+    }
+    .nerilo-dialog-footer {
+      padding: 12px 18px;
+    }
+  }
+}

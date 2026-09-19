@@ -1,0 +1,131 @@
+@layer nerilo-app {
+  .skills-settings-heading {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .skills-settings-heading > button {
+    flex-shrink: 0;
+  }
+  .skills-settings-row h3,
+  .skills-settings-row p {
+    overflow-wrap: anywhere;
+  }
+  .skills-settings-row p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .skills-settings-empty {
+    margin: 0;
+    padding: 28px 0;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .skills-settings-notice {
+    display: block;
+    margin-top: 16px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .skills-import-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  .skills-manifest textarea {
+    font-family: var(--font-family-code, monospace);
+    font-size: 12px;
+    line-height: 1.65;
+  }
+  .skills-source {
+    margin: 0;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    overflow-wrap: anywhere;
+  }
+  .skills-source a {
+    color: inherit;
+    text-underline-offset: 3px;
+  }
+  .skill-repository-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+  }
+  .skill-repository-heading span {
+    flex: 1;
+    overflow-wrap: anywhere;
+  }
+  .skill-repository-heading code {
+    color: var(--color-text-secondary);
+    font-size: 11px;
+  }
+  .skill-repository-results {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .skill-repository-results > p {
+    color: var(--color-text-secondary);
+    font-size: 13px;
+  }
+  .skill-repository-option {
+    justify-content: flex-start;
+    text-align: left;
+    flex-shrink: 0;
+  }
+  .skills-files > div {
+    margin-top: 10px;
+  }
+  .skills-files summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .skills-files summary::-webkit-details-marker {
+    display: none;
+  }
+  .skills-files summary > svg {
+    transform: rotate(-90deg);
+  }
+  .skills-files[open] summary > svg {
+    transform: rotate(0);
+  }
+  .skills-files ul {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    max-height: 160px;
+    overflow: auto;
+  }
+  .skills-files li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 0;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .skills-files li svg {
+    flex-shrink: 0;
+  }
+  .skills-files li span {
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 480px) {
+    .skills-settings-heading {
+      flex-wrap: wrap;
+    }
+  }
+}
