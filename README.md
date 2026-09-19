@@ -52,6 +52,8 @@ Containers run as a non-root user with a read-only root filesystem, dropped capa
 
 ## Development
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the branch and PR workflow, conventional commits, and required checks. GitHub Actions runs the test suite on Linux and macOS, checks formatting and types, builds the web app, and verifies the Docker runtime.
+
 React Grab loads during local development (`bun run dev` or `bun run web`). Hover over a UI element, press ⌘C or Ctrl+C, and paste its source context into your coding agent. The script is excluded from production builds.
 
 ```sh

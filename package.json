@@ -12,12 +12,12 @@
     "daemon": "bun apps/daemon/src/index.ts",
     "web": "bun --bun apps/web/node_modules/next/dist/bin/next dev apps/web --hostname 127.0.0.1 --port ${NERILO_WEB_PORT:-5185}",
     "build": "bun run --cwd packages/theme build && bun --bun apps/web/node_modules/next/dist/bin/next build apps/web",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
+    "typecheck": "bun --bun apps/web/node_modules/next/dist/bin/next typegen apps/web && tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
     "test": "bun test --preload ./scripts/test-setup.ts apps/daemon/src apps/web/src/lib containers",
     "image:build": "docker build -t nerilo-agent:1 -f containers/Dockerfile containers",
     "test:docker": "bun scripts/docker-smoke.ts",
-    "format": "prettier --write apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json",
-    "format:check": "prettier --check apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json"
+    "format": "prettier --write apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json .github CONTRIBUTING.md",
+    "format:check": "prettier --check apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json .github CONTRIBUTING.md"
   },
   "devDependencies": {
     "@types/bun": "latest",
