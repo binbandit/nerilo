@@ -1,13 +1,13 @@
 import { writeFileSync, readFileSync, unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { tickAutonomy, autonomyStatus } from "./autonomy";
-import { observePullRequest } from "./pr-observer";
+import { tickAutonomy, autonomyStatus } from "./tasks/autonomy";
+import { observePullRequest } from "./git/pr-observer";
 import { SKILLS_REQUEST_LIMIT } from "@nerilo/protocol";
-import { Store } from "./store";
-import { Engine } from "./engine";
-import { createApi } from "./api";
-import { refreshLinkedPullRequests } from "./pull-requests";
-import { dataDir, port, token } from "./config";
+import { Store } from "./platform/store";
+import { Engine } from "./tasks/engine";
+import { createApi } from "./http/api";
+import { refreshLinkedPullRequests } from "./git/pull-requests";
+import { dataDir, port, token } from "./platform/config";
 
 const lock = join(dataDir, "daemon.pid");
 if (existsSync(lock)) {

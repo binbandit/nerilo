@@ -1,0 +1,31 @@
+@layer nerilo-app {
+  .github-accounts {
+    margin-top: 32px;
+  }
+  .github-accounts-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .github-account-host + .github-account-host {
+    margin-top: 16px;
+  }
+  .github-login-command {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .github-login-command .message-copy-button {
+    opacity: 1;
+  }
+  @media (max-width: 760px) {
+    .github-accounts-heading {
+      flex-wrap: wrap;
+    }
+    .github-accounts-heading .preferences-row-copy {
+      flex-basis: 100%;
+    }
+  }
+}

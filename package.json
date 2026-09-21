@@ -13,16 +13,23 @@
     "web": "bun --bun apps/web/node_modules/next/dist/bin/next dev apps/web --hostname 127.0.0.1 --port ${NERILO_WEB_PORT:-5185}",
     "build": "bun run --cwd packages/theme build && bun --bun apps/web/node_modules/next/dist/bin/next build apps/web",
     "typecheck": "bun --bun apps/web/node_modules/next/dist/bin/next typegen apps/web && tsc -p tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit",
-    "test": "bun test --preload ./scripts/test-setup.ts apps/daemon/src apps/web/src/lib containers",
+    "test": "bun test --preload ./scripts/testing/setup.ts apps/daemon/src apps/web/src containers",
     "image:build": "docker build -t nerilo-agent:1 -f containers/Dockerfile containers",
-    "test:docker": "bun scripts/docker-smoke.ts",
-    "format": "prettier --write apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json .github CONTRIBUTING.md",
-    "format:check": "prettier --check apps/*/src packages/protocol/src packages/theme/src scripts containers/*.mjs package.json tsconfig.json .github CONTRIBUTING.md"
+    "test:docker": "bun scripts/smoke/docker-smoke.ts",
+    "test:harnesses": "bun scripts/smoke/harness-smoke.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run --cwd packages/theme check",
+    "lint": "eslint apps/web/src packages/theme/preview/src --max-warnings 0"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/node": "26.5.0",
-    "prettier": "3.9.6",
-    "typescript": "7.0.2"
+    "@types/bun": "^1.4.2",
+    "@types/node": "26.6.2",
+    "@typescript-eslint/parser": "^8.70.0",
+    "@typescript/native": "npm:typescript@7.0.2",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "3.9.8",
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
 }

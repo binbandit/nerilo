@@ -1,0 +1,14 @@
+@layer nerilo-app {
+  .sidebar [data-sidebar-row]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+    border-radius: 6px;
+  }
+  .sidebar .workspace-heading:focus-within .workspace-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sidebar .workspace-task:not(.selected):focus-within {
+    background: var(--color-overlay-hover);
+  }
+}

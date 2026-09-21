@@ -1,25 +1,25 @@
 "use client";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Theme } from "@astryxdesign/core";
+import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
+import { Theme } from "@astryxdesign/core/theme";
 import { neriloTheme } from "@nerilo/theme";
 import { Menu, RefreshCw, PanelLeftOpen } from "lucide-react";
-import { Sidebar } from "@/components/sidebar";
-import type { Snapshot, TaskDetail } from "@nerilo/protocol";
-import { Button, Text, Heading } from "@/components/ui";
-import { ProjectPullRequests } from "@/components/project-pull-requests";
-import { Home } from "@/components/home";
-import { TaskView } from "@/components/task-view";
-import { Manage } from "@/components/manage";
-import { EditorModal, type Editor } from "@/components/editors";
-import { coalesceRefresh } from "@/lib/refresh";
-import { apiUrl, loadSnapshot, loadTask } from "@/lib/api";
-import { MachineProvider } from "@/lib/machines";
-import { MachinePicker } from "@/components/machine-controls";
+import { Sidebar } from "@/features/navigation/sidebar";
+import { Button, Text, Heading } from "@/components/ui/ui";
+import { NeriloWordmark } from "@/components/ui/brand";
+import { Home } from "@/features/home/home";
+import { EditorModal, type Editor } from "@/components/editors/editors";
+import { useQuery } from "@tanstack/react-query";
+import { QueryProvider, useSession } from "@/lib/query-provider";
+import { queries } from "@/lib/query-options";
+import { needsAppReload } from "@/lib/response-schema";
+import { navigate, useRoute } from "@/features/navigation/route";
+import { MachinePicker } from "@/features/machines/machine-controls";
 import {
   ProjectActionDialog,
   type ProjectAction,
-} from "@/components/project-action-dialog";
-import { KeyboardHelp } from "@/components/keyboard-help";
+} from "@/features/projects/project-action-dialog";
+import { KeyboardHelp } from "@/features/navigation/keyboard-help";
 import {
   appShortcut,
   cycleRegion,
@@ -27,17 +27,70 @@ import {
   focusRegion,
   isEditing,
   openKeyboardLayer,
-} from "@/lib/keyboard";
-import { KeyboardPreferencesProvider } from "@/lib/shortcut-preferences";
+} from "@/features/navigation/keyboard";
+import {
+  KeyboardPreferencesProvider,
+  useShortcutPlatform,
+} from "@/features/navigation/shortcut-preferences";
 import { focusableControls } from "@/lib/focus";
-import "./keyboard.css";
+import "@/features/navigation/keyboard.css";
+
+const TaskView = dynamic(
+  () => import("@/features/tasks/task-view").then((module) => module.TaskView),
+  { loading: LoadingView },
+);
+
+const Manage = dynamic(
+  () => import("@/features/settings/manage").then((module) => module.Manage),
+  { loading: LoadingView },
+);
+
+const ProjectPullRequests = dynamic(
+  () =>
+    import("@/features/projects/project-pull-requests").then(
+      (module) => module.ProjectPullRequests,
+    ),
+  { loading: LoadingView },
+);
+
+function LoadingView() {
+  return (
+    <p role="status" className="initial-state">
+      Opening view…
+    </p>
+  );
+}
 
 export default function Nerilo() {
-  const [data, setData] = useState<Snapshot | null>(null);
-  const [detail, setDetail] = useState<TaskDetail | null>(null);
-  const [route, setRoute] = useState("home");
-  const [offline, setOffline] = useState("");
-  const [taskError, setTaskError] = useState("");
+  return (
+    <QueryProvider>
+      <Workspace />
+    </QueryProvider>
+  );
+}
+
+function Workspace() {
+  const { machineId, ready, error: sessionError, reconnect } = useSession();
+  const route = useRoute();
+  const snapshot = useQuery({ ...queries.snapshot(machineId), enabled: ready });
+  const taskId = route.startsWith("task/") ? route.slice(5) : null;
+  const task = useQuery({
+    ...queries.task(machineId, taskId ?? ""),
+    enabled: ready && taskId !== null,
+  });
+  const data = snapshot.data;
+  const detail = task.data;
+  const compatibilityError = [sessionError, snapshot.error, task.error].find(
+    needsAppReload,
+  );
+  const connectionError =
+    compatibilityError ??
+    sessionError ??
+    snapshot.error ??
+    (detail || needsAppReload(task.error) ? task.error : null);
+  const reloadRequired = needsAppReload(connectionError);
+  const offline = connectionError?.message ?? "";
+  const taskError = !detail ? (task.error?.message ?? "") : "";
   const [projectAction, setProjectAction] = useState<ProjectAction | null>(
     null,
   );
@@ -46,113 +99,43 @@ export default function Nerilo() {
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [searchRequest, setSearchRequest] = useState(0);
   const [shortcuts, setShortcuts] = useState(false);
-  const [mac, setMac] = useState(true);
+  const mac = useShortcutPlatform();
   const [focusRequest, setFocusRequest] = useState<{
     route: string;
     target: "content" | "composer";
   } | null>(null);
-  const loaded = useRef(false);
-  const lifecycle = useRef(0);
   const previousSidebarHidden = useRef(sidebarHidden);
-  const selected = useRef(route);
-  selected.current = route;
-  const refresh = useMemo(
-    () =>
-      coalesceRefresh(async () => {
-        const generation = lifecycle.current;
-        try {
-          const next = await loadSnapshot(!loaded.current);
-          if (generation !== lifecycle.current) return;
-          loaded.current = true;
-          setData(next);
-          setOffline("");
-          const current = selected.current;
-          if (current.startsWith("task/")) {
-            try {
-              const task = await loadTask(current.slice(5));
-              if (
-                generation === lifecycle.current &&
-                selected.current === current
-              ) {
-                setDetail(task);
-                setTaskError("");
-              }
-            } catch (e) {
-              if (
-                generation === lifecycle.current &&
-                selected.current === current
-              )
-                setTaskError(e instanceof Error ? e.message : String(e));
-            }
-          }
-        } catch (e) {
-          if (generation === lifecycle.current)
-            setOffline(e instanceof Error ? e.message : String(e));
-        }
-      }),
-    [],
-  );
+  const focusedRoute = useRef("");
   const nav = useCallback(
     (value: string, target: "content" | "composer" = "content") => {
       setFocusRequest({ route: value, target });
-      selected.current = value;
-      setRoute(value);
-      setTaskError("");
-      window.location.hash = value;
+      navigate(value);
       setMobile(false);
-      void refresh();
     },
-    [refresh],
+    [],
   );
-  useEffect(() => {
-    const update = () => {
-      const next = window.location.hash.slice(1) || "home";
-      if (selected.current !== next)
-        setFocusRequest((request) =>
-          request?.route === next
-            ? request
-            : { route: next, target: "content" },
-        );
-      setRoute(next);
-      selected.current = next;
-      setTaskError("");
-      void refresh();
-    };
-    update();
-    window.addEventListener("hashchange", update);
-    const timer = setInterval(() => void refresh(), 5000);
-    return () => {
-      lifecycle.current++;
-      window.removeEventListener("hashchange", update);
-      clearInterval(timer);
-    };
-  }, [refresh]);
-  useEffect(() => {
-    if (!data) return;
-    const source = new EventSource(apiUrl(`events?after=${data.sequence}`));
-    source.addEventListener("change", () => void refresh());
-    return () => source.close();
-  }, [Boolean(data), refresh]);
-  useEffect(() => {
-    setMac(/Mac|iPhone|iPad/.test(navigator.platform));
-  }, []);
+  const hasData = data !== undefined;
   useEffect(() => {
     if (
-      !focusRequest ||
-      focusRequest.route !== route ||
-      !data ||
+      (focusedRoute.current === route && !focusRequest) ||
+      !hasData ||
       (route.startsWith("task/") &&
         detail?.task.id !== route.slice(5) &&
         !taskError)
     )
       return;
     const frame = requestAnimationFrame(() => {
-      if (focusRequest.target !== "composer" || !focusComposer())
+      if (
+        focusRequest?.route !== route ||
+        focusRequest.target !== "composer" ||
+        !focusComposer()
+      )
         document.getElementById("main")?.focus();
+      focusedRoute.current = route;
       setFocusRequest(null);
     });
     return () => cancelAnimationFrame(frame);
-  }, [focusRequest, route, Boolean(data), detail?.task.id, taskError]);
+  }, [focusRequest, route, hasData, detail?.task.id, taskError]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const action = appShortcut(
@@ -251,226 +234,234 @@ export default function Nerilo() {
     });
     return () => cancelAnimationFrame(frame);
   }, [sidebarHidden]);
-  useEffect(() => {
-    const title = route.startsWith("task/")
-      ? detail?.task.id === route.slice(5)
-        ? detail.task.title
-        : "Task"
-      : route === "home"
-        ? "Room to make"
-        : route.startsWith("project/")
-          ? (data?.projects.find((p) => route.includes(p.id))?.name ??
-            "Project")
+  const title = route.startsWith("task/")
+    ? detail?.task.id === route.slice(5)
+      ? detail.task.title
+      : "Task"
+    : route === "home"
+      ? "Room to make"
+      : route.startsWith("project/")
+        ? (data?.projects.find((project) => project.id === route.split("/")[1])
+            ?.name ?? "Project")
+        : route.startsWith("settings/")
+          ? "Settings"
           : route[0].toUpperCase() + route.slice(1);
+  useEffect(() => {
     document.title = `${title} · Nerilo`;
-  }, [route, detail?.task.title, data?.projects]);
+  }, [title]);
   const prProject = route.endsWith("/prs")
     ? data?.projects.find((project) => route === `project/${project.id}/prs`)
     : undefined;
-  const view =
-    route === "projects" ||
-    route === "agents" ||
-    route === "library" ||
-    route === "settings"
+  const view = route.startsWith("settings/")
+    ? "settings"
+    : route === "projects" ||
+        route === "agents" ||
+        route === "library" ||
+        route === "settings"
       ? route
       : null;
   return (
     <KeyboardPreferencesProvider bindings={data?.settings.keybindings ?? {}}>
       <Theme theme={neriloTheme} mode={data?.settings.appearance ?? "light"}>
-        <MachineProvider>
-          <div
-            className={`nerilo-app ${sidebarHidden ? "sidebar-hidden" : ""}`}
+        <div className={`nerilo-app ${sidebarHidden ? "sidebar-hidden" : ""}`}>
+          <a
+            className="skip-link"
+            href="#main"
+            onClick={(event) => {
+              event.preventDefault();
+              document.getElementById("main")?.focus();
+            }}
           >
-            <a
-              className="skip-link"
-              href="#main"
-              onClick={(event) => {
-                event.preventDefault();
-                document.getElementById("main")?.focus();
-              }}
-            >
-              Skip to content
-            </a>
-            <Sidebar
-              data={data}
-              searchRequest={searchRequest}
-              onShowShortcuts={() => setShortcuts(true)}
-              onStartTask={(project) =>
-                nav(project ? `project/${project}` : "home", "composer")
-              }
-              route={route}
-              offline={offline}
-              mobile={mobile}
-              onClose={() => setMobile(false)}
-              onCollapse={() => setSidebarHidden(true)}
-              nav={nav}
-              onProjectAction={setProjectAction}
-              edit={setEditor}
-              refresh={() => void refresh()}
+            Skip to content
+          </a>
+          <Sidebar
+            data={data ?? null}
+            searchRequest={searchRequest}
+            onShowShortcuts={() => setShortcuts(true)}
+            onStartTask={(project) =>
+              nav(project ? `project/${project}` : "home", "composer")
+            }
+            route={route}
+            offline={offline}
+            mobile={mobile}
+            onClose={() => setMobile(false)}
+            onCollapse={() => setSidebarHidden(true)}
+            nav={nav}
+            onProjectAction={setProjectAction}
+            edit={setEditor}
+          />
+          {mobile && (
+            <button
+              className="nav-scrim"
+              aria-label="Close navigation"
+              onClick={() => setMobile(false)}
             />
-            {mobile && (
-              <button
-                className="nav-scrim"
-                aria-label="Close navigation"
-                onClick={() => setMobile(false)}
-              />
-            )}
-            <div className="main-shell" inert={mobile}>
-              {sidebarHidden && (
-                <div className="sidebar-reopen">
-                  <Button
-                    label="Expand sidebar"
-                    isIconOnly
-                    variant="ghost"
-                    icon={<PanelLeftOpen size={17} />}
-                    onClick={() => setSidebarHidden(false)}
-                  />
-                </div>
-              )}
-              <header className="topbar">
+          )}
+          <div className="main-shell" inert={mobile}>
+            {sidebarHidden && (
+              <div className="sidebar-reopen">
                 <Button
-                  label="Open navigation"
+                  label="Expand sidebar"
                   isIconOnly
                   variant="ghost"
-                  icon={<Menu size={19} />}
-                  onClick={() => {
-                    setSidebarHidden(false);
-                    setMobile(true);
-                  }}
+                  icon={<PanelLeftOpen size={17} />}
+                  onClick={() => setSidebarHidden(false)}
                 />
-                <span className="brand">nerilo.</span>
-              </header>
-              {offline && (
-                <div className="connection-banner" role="status">
-                  <div>
-                    <Text>{offline}</Text>
-                  </div>
-                  <Button
-                    label="Reconnect"
-                    icon={<RefreshCw size={15} />}
-                    onClick={() => {
-                      loaded.current = false;
-                      void refresh();
-                    }}
-                  />
-                </div>
-              )}
-              <main
-                id="main"
-                tabIndex={-1}
-                data-keyboard-region="content"
-                aria-label="Main content"
-              >
-                {!data ? (
-                  <div className="initial-state">
-                    <div className="brand">nerilo.</div>
-                    <Heading level={1}>
-                      {offline ? "Machine unavailable" : "Loading…"}
-                    </Heading>
-                    <Text color="secondary">
-                      {offline
-                        ? "Reconnect to this machine or choose another workspace."
-                        : ""}
-                    </Text>
-                    {offline && <MachinePicker />}
-                  </div>
-                ) : route.startsWith("task/") ? (
-                  taskError ? (
-                    <div className="initial-state">
-                      <Heading level={1}>This task is unavailable.</Heading>
-                      <Text>{taskError}</Text>
-                      <Button
-                        label="Back to my work"
-                        onClick={() => nav("home")}
-                      />
-                    </div>
-                  ) : detail?.task.id === route.slice(5) ? (
-                    <TaskView
-                      key={detail.task.id}
-                      onRestoreProject={() => {
-                        const project = data.projects.find(
-                          (p) => p.id === detail.task.projectId,
-                        );
-                        if (project)
-                          setProjectAction({ project, action: "restore" });
-                      }}
-                      detail={detail}
-                      data={data}
-                      refresh={() => void refresh()}
-                    />
-                  ) : (
-                    <div className="initial-state">
-                      <Text>Opening your task…</Text>
-                    </div>
-                  )
-                ) : prProject ? (
-                  <ProjectPullRequests
-                    key={prProject.id}
-                    project={prProject}
-                    data={data}
-                    nav={nav}
-                    refresh={() => void refresh()}
-                  />
-                ) : view ? (
-                  <Manage
-                    view={view}
-                    data={data}
-                    onProjectAction={setProjectAction}
-                    edit={setEditor}
-                    refresh={() => void refresh()}
-                    onProject={(id) => nav(`project/${id}`)}
-                  />
-                ) : (
-                  <Home
-                    key={route}
-                    data={data}
-                    onTask={(id) => nav(`task/${id}`)}
-                    projectFilter={
-                      route.startsWith("project/") ? route.slice(8) : undefined
-                    }
-                    onRestoreProject={(project) =>
-                      setProjectAction({ project, action: "restore" })
-                    }
-                    archive={route === "archive"}
-                    refresh={() => void refresh()}
-                  />
-                )}
-              </main>
-            </div>
-            {projectAction && data && (
-              <ProjectActionDialog
-                value={projectAction}
-                data={data}
-                refresh={() => void refresh()}
-                onClose={() => setProjectAction(null)}
-                onSaved={() => {
-                  const { project, action } = projectAction;
-                  setProjectAction(null);
-                  void refresh();
-                  const insideProject =
-                    route.startsWith(`project/${project.id}`) ||
-                    data.tasks.some(
-                      (task) =>
-                        task.projectId === project.id &&
-                        route === `task/${task.id}`,
-                    );
-                  nav(action !== "restore" && insideProject ? "home" : route);
+              </div>
+            )}
+            <header className="topbar">
+              <Button
+                label="Open navigation"
+                isIconOnly
+                variant="ghost"
+                icon={<Menu size={19} />}
+                onClick={() => {
+                  setSidebarHidden(false);
+                  setMobile(true);
                 }}
               />
+              <span className="brand" role="img" aria-label="Nerilo">
+                <NeriloWordmark />
+              </span>
+            </header>
+            {offline && (
+              <div className="connection-banner" role="status">
+                <div>
+                  <Text>{offline}</Text>
+                </div>
+                <Button
+                  label={reloadRequired ? "Reload app" : "Reconnect"}
+                  icon={<RefreshCw size={15} />}
+                  onClick={() => {
+                    if (reloadRequired) window.location.reload();
+                    else void reconnect();
+                  }}
+                />
+              </div>
             )}
-            {shortcuts && (
-              <KeyboardHelp mac={mac} onClose={() => setShortcuts(false)} />
-            )}
-            {editor && data && (
-              <EditorModal
-                editor={editor}
-                snapshot={data}
-                onClose={() => setEditor(null)}
-                onSaved={() => void refresh()}
-              />
-            )}
+            <main
+              id="main"
+              tabIndex={-1}
+              data-keyboard-region="content"
+              aria-label="Main content"
+            >
+              {!data ? (
+                <div className="initial-state">
+                  <div className="brand" role="img" aria-label="Nerilo">
+                    <NeriloWordmark />
+                  </div>
+                  <Heading level={1}>
+                    {reloadRequired
+                      ? "Reload app to continue"
+                      : offline
+                        ? "Machine unavailable"
+                        : "Loading…"}
+                  </Heading>
+                  <Text color="secondary">
+                    {reloadRequired
+                      ? "The app needs a fresh copy before it can display this machine’s data."
+                      : offline
+                        ? "Reconnect to this machine or choose another workspace."
+                        : ""}
+                  </Text>
+                  {offline && !reloadRequired && <MachinePicker />}
+                </div>
+              ) : route.startsWith("task/") ? (
+                taskError ? (
+                  <div className="initial-state">
+                    <Heading level={1}>
+                      {needsAppReload(task.error)
+                        ? "Reload app to show this task"
+                        : "This task is unavailable."}
+                    </Heading>
+                    <Text>{taskError}</Text>
+                    <Button
+                      label="Back to my work"
+                      onClick={() => nav("home")}
+                    />
+                  </div>
+                ) : detail?.task.id === route.slice(5) ? (
+                  <TaskView
+                    key={detail.task.id}
+                    onRestoreProject={() => {
+                      const project = data.projects.find(
+                        (p) => p.id === detail.task.projectId,
+                      );
+                      if (project)
+                        setProjectAction({ project, action: "restore" });
+                    }}
+                    detail={detail}
+                    data={data}
+                  />
+                ) : (
+                  <div className="initial-state">
+                    <Text>Opening your task…</Text>
+                  </div>
+                )
+              ) : prProject ? (
+                <ProjectPullRequests
+                  key={prProject.id}
+                  project={prProject}
+                  data={data}
+                  nav={nav}
+                />
+              ) : view ? (
+                <Manage
+                  key={route}
+                  view={view}
+                  data={data}
+                  onProjectAction={setProjectAction}
+                  edit={setEditor}
+                  onProject={(id) => nav(`project/${id}`)}
+                />
+              ) : (
+                <Home
+                  key={route}
+                  data={data}
+                  onTask={(id) => nav(`task/${id}`)}
+                  openSettings={(section) => nav(`settings/${section}`)}
+                  projectFilter={
+                    route.startsWith("project/") ? route.slice(8) : undefined
+                  }
+                  onRestoreProject={(project) =>
+                    setProjectAction({ project, action: "restore" })
+                  }
+                  archive={route === "archive"}
+                />
+              )}
+            </main>
           </div>
-        </MachineProvider>
+          {projectAction && data && (
+            <ProjectActionDialog
+              value={projectAction}
+              data={data}
+              onClose={() => setProjectAction(null)}
+              onSaved={() => {
+                const { project, action } = projectAction;
+                setProjectAction(null);
+
+                const insideProject =
+                  route.startsWith(`project/${project.id}`) ||
+                  data.tasks.some(
+                    (task) =>
+                      task.projectId === project.id &&
+                      route === `task/${task.id}`,
+                  );
+                nav(action !== "restore" && insideProject ? "home" : route);
+              }}
+            />
+          )}
+          {shortcuts && (
+            <KeyboardHelp mac={mac} onClose={() => setShortcuts(false)} />
+          )}
+          {editor && data && (
+            <EditorModal
+              editor={editor}
+              snapshot={data}
+              onClose={() => setEditor(null)}
+            />
+          )}
+        </div>
       </Theme>
     </KeyboardPreferencesProvider>
   );

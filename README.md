@@ -1,8 +1,10 @@
 # Nerilo
 
-A local AI agent workspace. Room to make.
+A browser-based AI agent workspace. Room to make.
 
-Next.js and Astryx on the front end, a Bun daemon with SQLite, and a separate Docker workspace for each task. Connect an existing Codex or Claude Code login, or an API key, give a task direction, review its changes, and continue the same agent session.
+Next.js and Astryx on the front end, a Bun daemon with SQLite, and a separate Docker workspace for each task. Run Codex, Claude Code, OpenCode, or Pi. Connect an existing Codex or Claude Code login, an API key, or a company gateway, give a task direction, review its changes, and continue the same agent session.
+
+The product target is a published Next.js website. The current preview runs locally; visitor-to-machine pairing and ownership must be implemented before it can be published for multiple users. See the [beta readiness review](docs/reviews/beta-readiness-2026-09-19.md).
 
 ## Run locally
 
@@ -14,7 +16,7 @@ bun run image:build
 bun run dev
 ```
 
-Open [Nerilo](http://127.0.0.1:5185). In Settings, choose **Use existing Codex login** or **Use existing Claude Code login**, or add an agent API key. Claude Code can also sign in through its own browser flow. Add a GitHub repository or a local Git repository with at least one commit. Project settings accept optional preparation and verification commands that run inside the container.
+Open [Nerilo](http://127.0.0.1:5185) and follow the setup checklist. In **Settings → Connections**, choose **Use existing login**, sign in with a subscription, add an API key, or configure a company gateway. Use **Test connection** to confirm it can answer. Add a GitHub repository or browse for a local Git repository with at least one commit. Project settings accept optional preparation and verification commands that run inside the container. See [agent connections](docs/guides/agent-connections.md) for account import, key managers and gateway setup.
 
 The web app listens on `127.0.0.1:5185`; the daemon listens on `127.0.0.1:5186`. To run them separately, use `bun run daemon` and `bun run web`. Closing the browser leaves the daemon working. Stopping `bun run dev` stops both local processes; running containers and saved work remain, and the next daemon start reconciles their results.
 
@@ -22,14 +24,14 @@ The web app listens on `127.0.0.1:5185`; the daemon listens on `127.0.0.1:5186`.
 
 Add another daemon in **Settings → Machines**, or use **Manage machines** in the sidebar machine menu. Import its connection file or enter its HTTPS or SSH tunnel address and connection token. Select the machine from the sidebar or new-task composer before starting work.
 
-Each machine owns its projects, agent connections, settings, and tasks. Task links remember the selected machine; follow-ups, Git actions, files, and queued work stay there. A disconnected machine never falls back to another one. Renaming, reconnecting, or removing a registration does not delete its work. See [machine setup](docs/machines.md) for installation, SSH, HTTPS, and connection-file export.
+Each machine owns its projects, agent connections, settings, and tasks. Task links remember the selected machine; follow-ups, Git actions, files, and queued work stay there. A disconnected machine never falls back to another one. Renaming, reconnecting, or removing a registration does not delete its work. See [machine setup](docs/guides/machines.md) for installation, SSH, HTTPS, and connection-file export.
 
 ## Working with tasks
 
 - Start from a committed repository or include local changes. Opt into new, untracked files from Workspace options; Git-ignored files stay excluded. Local changes become an isolated starting snapshot, so the diff shows the agent’s changes separately.
 - Send follow-ups while a task runs, pause it, or resume its retained session and workspace. Change provider, model, and effort from the composer at any time; a running turn keeps its original settings. Switching providers carries conversation context into a new session in the same workspace.
 - Review the resulting diff, inspect changed text or image files, and export a patch. Applying a patch requires a clean host checkout at the task's starting commit. Application writes local files without committing or pushing.
-- Add line comments through **Review files** below an agent response. Draft feedback survives refreshes, stays attached to the reviewed turn, and sends as one follow-up with file, line, and revision context. Earlier turns remain reviewable; feedback queues while the agent works. See [code review](docs/code-review.md).
+- Add line comments through **Review files** below an agent response. Draft feedback survives refreshes, stays attached to the reviewed turn, and sends as one follow-up with file, line, and revision context. Earlier turns remain reviewable; feedback queues while the agent works. See [code review](docs/guides/code-review.md).
 - Choose **Browse files** in task actions, or **Browse all files** in Task details, to explore the retained repository with Pierre Trees. Expand folders, search paths, filter changed files, and navigate with your saved keyboard shortcuts. The virtualized tree includes file icons and Git status markers. Preview code/text or PNG/JPEG images and copy contents or paths. **Add file to follow-up** inserts a reference into your draft. Browsing works after the agent container stops and reads the sandbox, not an exported checkout.
 - Choose **Export project** on a reviewed turn to run or edit its code on your Mac. Each checkout is a separate folder and branch; existing folders and your project are never overwritten. Install dependencies there before running it. Tasks started with local changes use this path for local review.
 - Agent completion and project checks are separate outcomes. A failed check retains its output and attention indicator without marking a successful agent turn as failed. Follow-ups can continue the work.
@@ -66,22 +68,28 @@ bun run build
 
 Tests use disposable data directories and isolated Git configuration. Set `NERILO_WEB_PORT` and `NERILO_DAEMON_PORT` to run a separate local instance, and `NERILO_NEXT_DIST_DIR` to keep its Next build output separate. The defaults remain 5185, 5186, and `.next`.
 
-See the [19 September code review and repairs](docs/review-2026-09-19.md) for findings, fixes, regression coverage, and validation boundaries.
+See the [19 September code review and repairs](docs/reviews/review-2026-09-19.md) for findings, fixes, regression coverage, and validation boundaries.
 
-The Docker smoke test uses temporary repositories and a deterministic fixture runner, makes no model calls, and cleans up its own containers and volumes. Real Codex creation and session resumption have also been exercised with a local login. Existing Claude Code login import, official container CLI authentication, a small live response, and structured AI summary generation have been verified. A live Claude editing task and follow-up also passed independent verification and retained the same native session. See [the live lifecycle demonstration](docs/lifecycle-demo.md) for GitHub and Claude evidence.
+The Docker smoke test uses temporary repositories and a deterministic fixture runner, makes no model calls, and cleans up its own containers and volumes. Real Codex creation and session resumption have also been exercised with a local login. Existing Claude Code login import, official container CLI authentication, a small live response, and structured AI summary generation have been verified. A live Claude editing task and follow-up also passed independent verification and retained the same native session. See [the live lifecycle demonstration](docs/reviews/lifecycle-demo.md) for GitHub and Claude evidence.
 
-This is a working local first version. Opt-in Autopilot can publish a task, address PR feedback and failed CI, update its branch, and squash-merge when GitHub requirements pass. A packaged installer, automatic startup, remote execution, automated directors, and multi-agent workflows remain future work. Archive retains resumable files and history; deleting a task removes its owned sandbox resources while keeping exported projects. See [implementation details](docs/implementation.md) for behavior and limits.
+The local preview supports execution on registered machines. Publishing the website still requires visitor authentication and ownership of each execution connection. Opt-in Autopilot can publish a task, address PR feedback and failed CI, update its branch, and squash-merge when GitHub requirements pass. A packaged companion, automatic startup, automated directors, and multi-agent workflows remain future work. Archive retains resumable files and history; deleting a task removes its owned sandbox resources while keeping exported projects. See [implementation details](docs/architecture/implementation.md) for behavior and limits.
 
 ## Design
 
-- [Moodboard](nerilo.png)
-- [Product and visual direction](docs/nerilo-direction.md)
-- [Architecture proposal](docs/architecture-proposal.md)
-- [Astryx integration](docs/astryx-integration.md)
+- [Moodboard](docs/assets/nerilo.png)
+- [Product and visual direction](docs/design/nerilo-direction.md)
+- [Architecture proposal](docs/architecture/architecture-proposal.md)
+- [Astryx integration](docs/architecture/astryx-integration.md)
 - [Nerilo theme](packages/theme/README.md)
 
-Everyday screens assume familiarity with agent tools. A task has one header; each request and result form one group. Activity, file details, and session metadata appear on demand. Explanatory copy is reserved for consequential choices and errors.
+Everyday screens support technical and nontechnical users. A task has one header; each request and result form one group. Activity, file details, and session metadata appear on demand. Setup explains prerequisites and connection choices; errors offer a recovery path.
 
-The [sidebar and PR direction](docs/sidebar-and-pr-direction.md) records the latest navigation decisions and current GitHub scope.
+The [sidebar and PR direction](docs/design/sidebar-and-pr-direction.md) records the latest navigation decisions and current GitHub scope.
 
 Task Git actions support local checkout review, branches, commits, explicit pushes, and pull requests. The Changes panel checks the remote branch when opened or refreshed and after Git actions, showing whether it is unpublished, up to date, ahead, behind, or diverged. Connection failures retain an unavailable state, and PR creation is offered only after the reviewed commit is confirmed on GitHub. AI drafts are editable before use. Tasks that include uncommitted source snapshots can be committed locally but cannot be published through Nerilo.
+
+## Repository navigation
+
+See the [repository structure](docs/repository-structure.md) for code ownership and file placement, the [documentation index](docs/README.md) for guides and design notes, and [CONTRIBUTING.md](CONTRIBUTING.md) for development checks.
+
+OpenCode and Pi support Anthropic, OpenAI, Google, and OpenRouter API keys, including import of supported keys from their local CLI settings. Rebuild the agent image after updating, then connect the harness in Settings and choose it in the model picker. See [agent connections](docs/guides/agent-connections.md) for setup and capability details. Run `bun run test:harnesses` after building the image to verify both CLIs against a local fixture API without real credentials.

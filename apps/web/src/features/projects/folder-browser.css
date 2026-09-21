@@ -1,0 +1,41 @@
+@layer nerilo-app {
+  .folder-browser-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .folder-browser-location {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .folder-browser-list {
+    min-width: 0;
+    max-width: 100%;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 320px;
+    overflow: auto;
+  }
+  .folder-browser-list button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    height: auto;
+    padding: 8px 10px;
+    justify-content: flex-start;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .folder-browser-list button:not(:disabled):hover {
+    background: var(--color-background-muted);
+    color: var(--color-text-primary);
+  }
+  .folder-browser-list button:focus-visible {
+    background: var(--color-background-muted);
+    outline: 2px solid var(--color-text-accent);
+    outline-offset: -2px;
+  }
+}

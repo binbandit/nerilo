@@ -2,12 +2,13 @@ import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { MachineError, MachineRegistry } from "@/lib/machine-registry";
+import { MachineError, MachineRegistry } from "@/server/machine-registry";
 
 import {
   readRequestText,
   RequestTooLargeError,
   SKILLS_REQUEST_LIMIT,
+  GIT_REQUEST_LIMIT,
 } from "@nerilo/protocol";
 
 export const dynamic = "force-dynamic";
@@ -84,7 +85,11 @@ async function handler(
       request.method === "POST"
         ? await readRequestText(
             request,
-            path.join("/") === "skills" ? SKILLS_REQUEST_LIMIT : 100000,
+            path.join("/") === "skills"
+              ? SKILLS_REQUEST_LIMIT
+              : /^tasks\/[^/]+\/git(?:\/draft)?$/.test(path.join("/"))
+                ? GIT_REQUEST_LIMIT
+                : 100000,
           )
         : undefined;
     if (path[0] === "machines") {

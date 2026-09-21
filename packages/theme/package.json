@@ -20,18 +20,18 @@
     "preview:start": "bun --bun node_modules/next/dist/bin/next start preview --hostname 127.0.0.1 --port 5184"
   },
   "peerDependencies": {
-    "@astryxdesign/core": "0.5.4"
+    "@astryxdesign/core": "0.6.2"
   },
   "devDependencies": {
-    "@astryxdesign/cli": "0.5.4",
-    "@astryxdesign/core": "0.5.4",
-    "@stylexjs/stylex": "0.19.0",
-    "@types/node": "26.5.0",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.7",
-    "next": "16.3.4",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
+    "@astryxdesign/cli": "0.6.2",
+    "@astryxdesign/core": "0.6.2",
+    "@stylexjs/stylex": "0.19.1",
+    "@types/node": "26.6.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "next": "16.3.5",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "typescript": "7.0.2"
   }
 }

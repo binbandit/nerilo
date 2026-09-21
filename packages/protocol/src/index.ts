@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { githubAccountBindingSchema } from "./github-accounts";
+import { checkoutPullRequestSchema } from "./git";
 import { sandboxSchema, sandboxDefaults } from "./sandbox";
 import { requestOriginSchema } from "./request-origin";
 import { repositoryEventSchema } from "./repository-event";
@@ -14,11 +16,13 @@ export * from "./agent-tools";
 export * from "./skills";
 export * from "./skill-sources";
 export * from "./workspace-files";
+export * from "./folders";
 export * from "./keyboard";
 export * from "./repository-event";
 export * from "./sandbox";
 export * from "./autonomy";
 export * from "./git";
+export * from "./github-accounts";
 export {
   autopilotPromptPrefix,
   requestLabel,
@@ -27,8 +31,9 @@ export {
   type RequestOrigin,
 } from "./request-origin";
 
-export const providerSchema = z.enum(["codex", "claude"]);
-export type Provider = z.infer<typeof providerSchema>;
+import { providerSchema } from "./providers";
+export * from "./providers";
+export * from "./execution-labels";
 export const statusSchema = z.enum([
   "queued",
   "preparing",
@@ -42,6 +47,7 @@ export const statusSchema = z.enum([
 ]);
 export type TaskStatus = z.infer<typeof statusSchema>;
 export const projectInput = z.object({
+  githubAccount: githubAccountBindingSchema.nullable().optional(),
   name: z.string().trim().min(1).max(80),
   path: z.string().trim().max(2000).default(""),
   repository: z.string().trim().max(2000).nullable().default(null),
@@ -91,26 +97,45 @@ export const executionSchema = z.object({
   effort: effortSchema,
 });
 export type Execution = z.infer<typeof executionSchema>;
+const modelListSchema = z.array(
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    efforts: z.array(effortSchema),
+    defaultEffort: effortSchema,
+  }),
+);
 export const modelCatalogSchema = z.object({
-  codex: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      efforts: z.array(effortSchema),
-      defaultEffort: effortSchema,
-    }),
-  ),
-  claude: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      efforts: z.array(effortSchema),
-      defaultEffort: effortSchema,
-    }),
-  ),
+  codex: modelListSchema,
+  claude: modelListSchema,
+  opencode: modelListSchema.default([]),
+  pi: modelListSchema.default([]),
+  defaults: z
+    .partialRecord(
+      providerSchema,
+      z.object({
+        model: z.string(),
+        source: z.enum(["agent", "gateway", "nerilo"]),
+      }),
+    )
+    .optional(),
 });
 export type ModelCatalog = z.infer<typeof modelCatalogSchema>;
+export const pullRequestIntentSchema = z.enum([
+  "review",
+  "address_feedback",
+  "resolve_conflicts",
+]);
+export type PullRequestIntent = z.infer<typeof pullRequestIntentSchema>;
+export const pullRequestListStateSchema = z.enum([
+  "open",
+  "merged",
+  "closed",
+  "all",
+]);
+export type PullRequestListState = z.infer<typeof pullRequestListStateSchema>;
 export const taskInput = z.object({
+  githubAccount: githubAccountBindingSchema.nullable().optional(),
   tools: agentToolsSchema.default({ skillIds: null, mcpServerIds: null }),
   projectId: z.string(),
   prompt: z.string().trim().min(1).max(30000),
@@ -120,6 +145,12 @@ export const taskInput = z.object({
   includeChanges: z.boolean().default(false),
   includeUntracked: z.boolean().default(false),
   pullRequestURL: z.string().url().max(2000).optional(),
+  pullRequestIntent: pullRequestIntentSchema.optional(),
+  pullRequestContextHash: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
+  pullRequestPreviousTaskId: z.string().optional(),
   execution: executionSchema.optional(),
 });
 export const queuedInputSchema = z.object({
@@ -129,26 +160,39 @@ export const queuedInputSchema = z.object({
   createdAt: z.string(),
   scheduledAt: z.string().datetime({ offset: true }).nullable().default(null),
 });
-export const pullRequestSchema = z.object({
-  url: z.string().url(),
-  number: z.number().int().positive(),
-  title: z.string(),
-  repository: z.string(),
-  state: z.enum(["draft", "open", "merged", "closed"]),
-  review: z.enum(["approved", "changes_requested", "required", "none"]),
-  checks: z.enum(["passing", "failing", "pending", "none"]),
-  checkRuns: z.array(
-    z.object({
-      name: z.string(),
-      state: z.enum(["passing", "failing", "pending"]),
-    }),
-  ),
-  conflicts: z.boolean(),
-  head: z.string(),
-  base: z.string(),
-  syncedAt: z.string(),
-  error: z.string().nullable(),
-});
+export const pullRequestSchema = z
+  .object({
+    author: z.string().nullable().optional(),
+    headSha: z
+      .string()
+      .regex(/^[a-f0-9]{40}$/)
+      .nullable()
+      .optional(),
+    url: z.string().url(),
+    number: z.number().int().positive(),
+    title: z.string(),
+    repository: z.string(),
+    state: z.enum(["draft", "open", "merged", "closed"]),
+    review: z.enum(["approved", "changes_requested", "required", "none"]),
+    checks: z.enum(["passing", "failing", "pending", "none"]),
+    checkRuns: z.array(
+      z.object({
+        name: z.string(),
+        state: z.enum(["passing", "failing", "pending"]),
+      }),
+    ),
+    conflicts: z.boolean(),
+    head: z.string(),
+    base: z.string(),
+    syncedAt: z.string().nullable(),
+    attemptedAt: z.string().optional(),
+    error: z.string().nullable(),
+  })
+  .transform((pr) => {
+    if (!pr.error || pr.attemptedAt) return pr;
+    // Older failed refreshes overwrote syncedAt; that was an attempt, not success.
+    return { ...pr, syncedAt: null, attemptedAt: pr.syncedAt ?? undefined };
+  });
 export type PullRequest = z.infer<typeof pullRequestSchema>;
 export const projectPullRequestsSchema = z.object({
   repository: z.string().nullable(),
@@ -161,9 +205,23 @@ export const pullRequestSourceSchema = z.object({
   number: z.number().int().positive(),
   headCommit: z.string().regex(/^[a-f0-9]{40}$/),
   baseCommit: z.string().regex(/^[a-f0-9]{40}$/),
+  headBranch: z.string().optional(),
+  baseBranch: z.string().optional(),
+  headRepository: z.string().nullable().optional(),
+  intent: pullRequestIntentSchema.optional(),
+  previousTaskId: z.string().optional(),
 });
+export const pullRequestContextSchema = z.object({
+  pr: pullRequestSchema,
+  source: pullRequestSourceSchema,
+  feedback: z.string(),
+  feedbackCount: z.number().int().nonnegative(),
+  contextHash: z.string().regex(/^[a-f0-9]{64}$/),
+});
+export type PullRequestContext = z.infer<typeof pullRequestContextSchema>;
 export type PullRequestSource = z.infer<typeof pullRequestSourceSchema>;
 export const taskSchema = z.object({
+  githubAccount: githubAccountBindingSchema.nullable().optional(),
   tools: agentToolsSchema.default({ skillIds: null, mcpServerIds: null }),
   sandbox: sandboxSchema.nullable().default(null),
   remoteRevision: z
@@ -173,7 +231,12 @@ export const taskSchema = z.object({
     .default(null),
   includeUntracked: z.boolean().default(false),
   checkout: z
-    .object({ path: z.string(), turnId: z.string(), createdAt: z.string() })
+    .object({
+      path: z.string(),
+      turnId: z.string(),
+      createdAt: z.string(),
+      pullRequest: checkoutPullRequestSchema.nullable().optional(),
+    })
     .nullable()
     .default(null),
   effort: effortSchema.default(""),
@@ -237,6 +300,7 @@ export const resultSchema = z.object({
 });
 export type RunResult = z.infer<typeof resultSchema>;
 export const turnSchema = z.object({
+  sessionId: z.string().nullable().optional(),
   connectionId: z.string().nullable().optional(),
   requestOrigin: requestOriginSchema.optional(),
   check: z
@@ -315,6 +379,20 @@ export const runtimeSchema = z.object({
   connections: z.object({
     codex: connectionSchema,
     claude: connectionSchema,
+    opencode: connectionSchema.default({
+      ready: false,
+      source: "Not connected",
+      canImport: false,
+      canImportGateway: false,
+      mode: "direct",
+    }),
+    pi: connectionSchema.default({
+      ready: false,
+      source: "Not connected",
+      canImport: false,
+      canImportGateway: false,
+      mode: "direct",
+    }),
   }),
 });
 export type Runtime = z.infer<typeof runtimeSchema>;
@@ -334,6 +412,10 @@ export const detailSchema = z.object({
   events: z.array(eventSchema),
 });
 export type TaskDetail = z.infer<typeof detailSchema>;
+export const stateSummarySchema = z.object({
+  turnId: z.string().nullable(),
+  text: z.string().nullable(),
+});
 export const labels: Record<TaskStatus, string> = {
   queued: "Queued",
   preparing: "Preparing",

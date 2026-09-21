@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import { DM_Sans, DM_Serif_Display } from "next/font/google";
+import { DM_Sans, Bodoni_Moda } from "next/font/google";
 import Script from "next/script";
-import "./globals.css";
-import "./workspace.css";
+import "@/styles/globals.css";
+import "@/styles/workspace.css";
 const sans = DM_Sans({ subsets: ["latin"], variable: "--font-nerilo-sans" });
-const serif = DM_Serif_Display({
+const serif = Bodoni_Moda({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-nerilo-serif",

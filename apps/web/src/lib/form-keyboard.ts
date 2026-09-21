@@ -3,7 +3,7 @@ import { matchesShortcut, type ShortcutBindings } from "@nerilo/protocol";
 import {
   useKeyboardBindings,
   useShortcutPlatform,
-} from "@/lib/shortcut-preferences";
+} from "@/features/navigation/shortcut-preferences";
 
 export function useSubmitFromField() {
   const bindings = useKeyboardBindings();

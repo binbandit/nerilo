@@ -1,0 +1,118 @@
+@layer nerilo-app {
+  .project-pr-toolbar {
+    align-items: flex-end;
+  }
+  .project-pr-toolbar > :first-child {
+    min-width: 170px;
+  }
+  .project-pr-toolbar > .project-pr-search {
+    flex: 0 1 320px;
+    width: 320px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .project-pr-scope {
+    display: block;
+    margin-bottom: 8px;
+  }
+  .project-pr-meta {
+    flex-wrap: wrap;
+  }
+  .project-pr-meta span {
+    flex-shrink: 0;
+  }
+  .project-pr-meta span:last-child {
+    white-space: normal;
+  }
+  .project-pr-row .pr-blockers {
+    margin-top: 7px;
+  }
+  .project-pr-row .pr-row-checks > p {
+    margin: 7px 0 0;
+    overflow-wrap: anywhere;
+  }
+  .pr-workspace-history {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .pr-workspace-history summary,
+  .pr-import-context summary {
+    cursor: pointer;
+  }
+  .pr-workspace-history ol {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 12px;
+  }
+  .pr-workspace-history li {
+    display: grid;
+    gap: 4px;
+  }
+  .pr-workspace-history a {
+    color: var(--color-text-accent);
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+  }
+  .pr-existing-workspace,
+  .pr-import-context {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .pr-existing-workspace p {
+    margin: 0 0 8px;
+  }
+  .pr-task-options {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+  }
+  .pr-task-options > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .pr-task-options button[aria-haspopup="menu"] {
+    height: 32px;
+    max-width: 100%;
+    gap: 7px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .pr-import-context-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .pr-import-context p {
+    margin: 6px 0;
+  }
+  .pr-import-context details {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .pr-import-context pre {
+    max-height: 220px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: inherit;
+    color: var(--color-text-primary);
+  }
+  @media (max-width: 760px) {
+    .project-pr-toolbar {
+      flex-wrap: wrap;
+    }
+    .project-pr-toolbar > :last-child {
+      flex-basis: 100%;
+      max-width: none;
+      width: 100%;
+    }
+  }
+}

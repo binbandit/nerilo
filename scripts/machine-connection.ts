@@ -1,7 +1,7 @@
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { writeFileSync } from "node:fs";
-import { readMachineIdentity } from "../apps/daemon/src/machine-identity";
+import { readMachineIdentity } from "../apps/daemon/src/platform/machine-identity";
 
 async function main() {
   const { values } = parseArgs({
@@ -30,7 +30,7 @@ async function main() {
     throw new Error(
       "Use an HTTPS daemon URL or an HTTP localhost tunnel URL, with no path, credentials, query, or fragment.",
     );
-  const { dataDir, token } = await import("../apps/daemon/src/config");
+  const { dataDir, token } = await import("../apps/daemon/src/platform/config");
   const machine = readMachineIdentity(dataDir);
   const output = resolve(values.output);
   writeFileSync(

@@ -31,6 +31,7 @@ jobs:
           bun-version: "1.4.2"
       - run: bun install --frozen-lockfile
       - run: bun run format:check
+      - run: bun run lint
       - run: bun run typecheck
       - run: bun run --cwd packages/theme check
       - run: bun run build
@@ -72,9 +73,9 @@ jobs:
       - run: bun run image:build
       - run: bun run test:docker
       - name: Verify credential isolation and read-only workspaces
-        run: bun scripts/verification-smoke.ts
+        run: bun scripts/smoke/verification-smoke.ts
       - name: Verify sandbox resource limits
-        run: bun scripts/sandbox-smoke.ts
+        run: bun scripts/smoke/sandbox-smoke.ts
 
   pr-title:
     name: Conventional PR title

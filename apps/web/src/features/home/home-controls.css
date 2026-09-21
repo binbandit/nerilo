@@ -1,0 +1,147 @@
+@layer nerilo-app {
+  .home-content .new-task {
+    container-type: inline-size;
+  }
+  .home-composer {
+    --_chat-composer-padding: 16px;
+    border-radius: var(--radius-chat);
+    box-shadow: 0 3px 12px rgb(30 44 70 / 4%);
+  }
+  .home-composer .astryx-chat-composer-input {
+    --text-body-size: 16px;
+    min-height: 88px;
+  }
+  .home-composer .astryx-chat-composer-input > [contenteditable],
+  .home-composer .astryx-chat-composer-input > [aria-hidden="true"] {
+    line-height: 24px;
+  }
+  .home-composer div:has(> div > .composer-options) {
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+  }
+  .home-content .new-task div:has(> .composer-options) {
+    min-width: 0;
+  }
+  .home-content .composer-options {
+    gap: 2px;
+    min-width: 0;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  .home-content .composer-options > div:not([popover]),
+  .home-context-controls > div:not([popover]),
+  .home-agent-controls > div:not([popover]) {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 2px;
+  }
+  .home-content .composer-options button[aria-haspopup="menu"] {
+    min-width: 0;
+    max-width: 180px;
+    white-space: nowrap;
+  }
+  .home-content .composer-options .home-task-options {
+    flex-shrink: 0;
+  }
+  .home-start-button {
+    flex-shrink: 0;
+  }
+  .composer-branch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    min-width: 0;
+    max-width: 180px;
+    color: var(--color-text-secondary);
+    font-size: 12px;
+  }
+  .composer-branch span {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .composer-branch svg {
+    flex-shrink: 0;
+  }
+  .starting-point-trigger {
+    max-width: 205px;
+    color: var(--color-text-secondary);
+  }
+
+  .start-option-row small {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+  }
+  .start-option-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .start-option-hint {
+    margin: 6px 12px 8px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+  }
+  .home-task-options {
+    color: var(--color-text-secondary);
+  }
+  @container (max-width: 600px) {
+    .home-composer {
+      --_chat-composer-padding: 12px;
+    }
+    .home-composer .astryx-chat-composer-input {
+      min-height: 96px;
+    }
+    .home-content .composer-options {
+      gap: 0;
+    }
+    .home-content .composer-options button {
+      font-size: 12px;
+    }
+    .home-start-button {
+      width: 36px;
+      min-width: 36px;
+      padding-inline: 0;
+    }
+    .home-start-button > span:first-child > span:nth-child(2) {
+      display: none;
+    }
+    .starting-point-trigger {
+      max-width: 155px;
+    }
+  }
+  @container (max-width: 520px) {
+    .home-content .composer-options {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+    }
+    .home-content .composer-options button {
+      min-height: 44px;
+    }
+    .home-composer div:has(> .home-start-button) {
+      align-self: flex-end;
+    }
+    .home-start-button {
+      width: 44px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+  @container (max-width: 420px) {
+    .home-content .composer-options .machine-picker-trigger {
+      flex-shrink: 0;
+    }
+    .home-content
+      .machine-picker-trigger
+      > span:first-child
+      > span:nth-child(2) {
+      display: none;
+    }
+  }
+}

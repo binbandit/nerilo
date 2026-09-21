@@ -1,17 +1,36 @@
 import { z } from "zod";
 
+// JSON escaping can use six bytes per description character.
+export const GIT_REQUEST_LIMIT = 400000;
+
 export const gitDraftSchema = z.object({
   branch: z.string().trim().min(1).max(180),
   commitTitle: z.string().trim().min(1).max(300),
   prTitle: z.string().trim().min(1).max(300),
-  prBody: z.string().max(12000),
+  prBody: z.string().max(60000),
 });
 export type GitDraft = z.infer<typeof gitDraftSchema>;
+export const pullRequestTemplatesSchema = z.array(
+  z.object({ path: z.string(), body: gitDraftSchema.shape.prBody }),
+);
+export type PullRequestTemplate = z.infer<
+  typeof pullRequestTemplatesSchema
+>[number];
+export const checkoutPullRequestSchema = z.object({
+  url: z.string().url(),
+  number: z.number().int().positive(),
+  repository: z.string(),
+  branch: z.string(),
+  expectedHead: z.string().regex(/^[a-f0-9]{40}$/),
+});
 export const gitStatusSchema = z.object({
   path: z.string(),
   turnId: z.string(),
   branch: z.string(),
   baseBranch: z.string(),
+  baseCommit: z.string().optional(),
+  preservesHistory: z.boolean().optional(),
+  pullRequest: checkoutPullRequestSchema.nullable().optional(),
   head: z.string(),
   reviewToken: z.string(),
   dirty: z.boolean(),

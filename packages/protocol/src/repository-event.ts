@@ -9,6 +9,7 @@ export const repositoryEventSchema = z.object({
     "base-update",
     "published",
     "pr-opened",
+    "pr-linked",
     "merged",
     "closed",
     "branch",
@@ -21,6 +22,10 @@ export const repositoryEventSchema = z.object({
   prUrl: z.string().nullable().default(null),
   headSha: z.string().nullable().default(null),
   baseSha: z.string().nullable().default(null),
+  evidenceVersion: z.literal(2).optional(),
+  observedHeadSha: z.string().nullable().optional(),
+  observedBaseSha: z.string().nullable().optional(),
+  observedAt: z.string().optional(),
   occurredAt: z.string(),
   timeSource: z.enum(["github", "nerilo", "observed"]),
   status: z

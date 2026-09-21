@@ -1,6 +1,6 @@
 # Nerilo Astryx theme
 
-The shared Astryx 0.5.4 theme used by the Nerilo app, with a separate component preview.
+The shared Astryx 0.6.2 theme used by the Nerilo app, with a separate component preview.
 
 `src/nerilo.ts` is the editable source. `dist/` contains the generated CSS, theme module, and TypeScript declarations. Keep these together and regenerate them after changing the source. Do not edit generated files directly.
 
@@ -24,22 +24,28 @@ The preview uses real Astryx `Theme`, `Heading`, `Text`, `ChatComposer`, `Select
 Import the generated theme module and CSS together. The Bun workspace uses these exports:
 
 ```tsx
-'use client';
+"use client";
 
-import {Theme} from '@astryxdesign/core';
-import {neriloTheme} from '@nerilo/theme';
-import '@nerilo/theme/theme.css';
+import { Theme } from "@astryxdesign/core";
+import { neriloTheme } from "@nerilo/theme";
+import "@nerilo/theme/theme.css";
 
-export function NeriloTheme({children}: {children: React.ReactNode}) {
-  return <Theme theme={neriloTheme} mode="system">{children}</Theme>;
+export function NeriloTheme({ children }: { children: React.ReactNode }) {
+  return (
+    <Theme theme={neriloTheme} mode="system">
+      {children}
+    </Theme>
+  );
 }
 ```
 
 Load Astryx's reset and component CSS before the theme. Declare the layer order explicitly: `reset, astryx-base, astryx-theme`, followed by the application's own layer. The preview demonstrates this without a custom StyleX compiler or Tailwind.
 
-Operational headings use DM Sans. `Heading` with `type="editorial"` opts into the large DM Serif Display treatment while preserving a semantic heading level. The generated declaration file registers this variant. Avoid using the editorial style for every task title.
+Operational headings use DM Sans. `Heading` with `type="editorial"` opts into the large Bodoni Moda treatment while preserving a semantic heading level. The generated declaration file registers this variant. Avoid using the editorial style for every task title.
 
-The theme names fonts but does not load them. The preview uses `next/font/google` to download and self-host DM Sans and DM Serif Display at build time, then maps the generated font variables onto theme roles. A fresh build requires access to the font provider; vendor licensed font files with `next/font/local` if fully offline builds become a requirement.
+The theme names fonts but does not load them. The app and preview use `next/font/google` to download and self-host DM Sans and Bodoni Moda at build time, then map the generated font variables onto theme roles. A fresh build requires access to the font provider; vendor licensed font files with `next/font/local` if fully offline builds become a requirement.
+
+The September 19 alignment brings the moodboard's stronger cobalt into primary actions and selected rows, brightens working surfaces, and adds blue ink and butter local tokens for the welcome screen. Dark surfaces retain their neutral palette. The web app's wordmark and arch are scalable SVGs in `apps/web/src/components/ui/brand.tsx`.
 
 ## Validation
 
@@ -51,6 +57,6 @@ Verified on 9 September 2026 with Bun 1.4.2, Next.js 16.3.4, React 19.2.8, and A
 - Desktop and narrow layout inspection in light and dark appearance.
 - Resolved-token contrast checks for primary text, secondary text on the muted surface, and primary/success/warning/error labels in both modes. These are targeted checks, not a complete accessibility audit.
 
-Pin Astryx while it is in beta. Rebuild and visually check the theme when upgrading. The prototype wordmark is text, not the final production logo.
+Pin Astryx while it is in beta. Rebuild and visually check the theme when upgrading. The theme preview retains a text wordmark; the app uses its shared SVG brand component.
 
 References: [Astryx theme documentation](https://astryx.atmeta.com/docs/theme), [Next.js setup](https://github.com/facebook/astryx/tree/main/apps/example-nextjs), [component catalog](https://astryx.atmeta.com/components).

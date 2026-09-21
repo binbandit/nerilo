@@ -1,31 +1,63 @@
-import { snapshotSchema, detailSchema } from "@nerilo/protocol";
-import { machineApiUrl } from "./machine-location";
+import { machineApiUrl } from "@/features/machines/machine-location";
 
-export function apiUrl(path: string) {
+export function apiUrl(path: string, machineId?: string) {
   return machineApiUrl(
     path,
-    typeof window === "undefined" ? "" : window.location.search,
+    machineId === undefined
+      ? typeof window === "undefined"
+        ? ""
+        : window.location.search
+      : new URLSearchParams({ machine: machineId }).toString(),
   );
 }
-
-export async function read(path: string) {
-  const response = await fetch(apiUrl(path), { cache: "no-store" });
-  const data: unknown = await response.json();
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+async function responseData(response: Response): Promise<unknown> {
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    throw new ApiError(
+      response.ok
+        ? "Nerilo returned an unexpected response. Reload this view and try again."
+        : "Nerilo is temporarily unavailable. Try reconnecting in a moment.",
+      response.status,
+    );
+  }
   if (!response.ok)
-    throw new Error(
+    throw new ApiError(
       data && typeof data === "object" && "error" in data
         ? String(data.error)
         : "The request failed.",
+      response.status,
     );
   return data;
 }
-export const loadSnapshot = async (bootstrap = false) =>
-  snapshotSchema.parse(await read(bootstrap ? "bootstrap" : "snapshot"));
-export const loadTask = async (id: string) =>
-  detailSchema.parse(await read(`tasks/${id}`));
+
+export async function read(
+  path: string,
+  signal?: AbortSignal,
+  machineId?: string,
+) {
+  return responseData(
+    await fetch(apiUrl(path, machineId), { cache: "no-store", signal }),
+  );
+}
 const retryKeys = new Map<string, string>();
-export async function mutate(path: string, body: unknown = {}) {
-  const url = apiUrl(path);
+export async function mutate(
+  path: string,
+  body: unknown = {},
+  signal?: AbortSignal,
+  machineId?: string,
+) {
+  const url = apiUrl(path, machineId);
   const content = JSON.stringify(body);
   const retryable =
     path === "tasks" || /^tasks\/[^/]+\/(follow-up|queue)$/.test(path);
@@ -37,6 +69,7 @@ export async function mutate(path: string, body: unknown = {}) {
   }
   const response = await fetch(url, {
     method: "POST",
+    signal,
     headers: { "Content-Type": "application/json", "Idempotency-Key": key },
     body: content,
   });
@@ -44,13 +77,7 @@ export async function mutate(path: string, body: unknown = {}) {
   // a retry returns a usable result or an explicit rejection.
   if (response.status >= 400 && response.status < 500)
     retryKeys.delete(requestKey);
-  const data: unknown = await response.json();
-  if (!response.ok)
-    throw new Error(
-      data && typeof data === "object" && "error" in data
-        ? String(data.error)
-        : "The request failed.",
-    );
+  const data = await responseData(response);
   retryKeys.delete(requestKey);
   return data;
 }

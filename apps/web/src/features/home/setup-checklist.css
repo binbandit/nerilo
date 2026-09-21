@@ -1,0 +1,98 @@
+@layer nerilo-app {
+  .setup-checklist {
+    background: var(--color-background-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .setup-checklist h2 {
+    font: inherit;
+    font-weight: 550;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+    margin: 0 0 6px;
+  }
+  .setup-checklist p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+  .setup-checklist ol {
+    padding: 0;
+    margin: 20px 0 0;
+    list-style: none;
+  }
+  .setup-checklist li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 0;
+    border-top: 1px solid var(--color-border);
+  }
+  .setup-checklist li:last-child {
+    padding-bottom: 0;
+  }
+  .setup-step-number {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--astryx-theme-nerilo-color-butter);
+    color: var(--color-on-warning);
+    font-size: 12px;
+  }
+  .setup-step-number.is-complete {
+    background: var(--color-success-muted);
+    color: var(--color-success);
+  }
+  .setup-step-copy {
+    min-width: 0;
+    flex: 1;
+  }
+  .setup-step-copy h3 {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 3px;
+  }
+  .setup-build-recovery,
+  .composer-readiness {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .setup-build-recovery {
+    margin-top: 20px;
+  }
+  .composer-readiness {
+    margin: 12px 0 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+  @media (max-width: 600px) {
+    .setup-checklist {
+      padding: 20px 16px;
+    }
+    .setup-checklist li {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .setup-step-copy {
+      flex-basis: calc(100% - 42px);
+    }
+    .setup-checklist li > button {
+      margin-left: 38px;
+      min-height: 44px;
+    }
+    .composer-readiness {
+      align-items: start;
+      flex-direction: column;
+    }
+  }
+}

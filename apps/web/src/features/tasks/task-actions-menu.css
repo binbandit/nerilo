@@ -1,0 +1,57 @@
+.task-actions [popover]:popover-open:has(.task-actions-menu) {
+  display: flex;
+  flex-direction: column;
+  /* The anchor's available space shrinks when the header wraps on mobile. */
+  max-block-size: min(480px, calc(100% - 16px));
+}
+
+.astryx-popover-surface:has(> .task-actions-menu) {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.task-actions-menu {
+  padding: 6px;
+  gap: 0;
+  border-radius: 12px;
+  /* Let the full action list fit, while retaining scrolling on short screens. */
+  max-block-size: min(480px, calc(100dvh - 96px));
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.task-actions-menu .astryx-dropdown-menu-item {
+  min-height: 36px;
+  padding: 8px 10px;
+  gap: 10px;
+  border-radius: 6px;
+}
+
+.task-actions-menu .astryx-dropdown-menu-item svg {
+  color: var(--color-icon-secondary);
+  stroke-width: 1.75;
+}
+
+.task-actions-menu .astryx-dropdown-menu-divider {
+  width: auto;
+  margin: 5px 8px;
+}
+
+@media (pointer: coarse) {
+  .task-actions-menu .astryx-dropdown-menu-item {
+    min-height: 44px;
+  }
+}
+
+.task-rename-suggestion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.task-rename-suggest-button {
+  border: 1px solid var(--color-border);
+}
