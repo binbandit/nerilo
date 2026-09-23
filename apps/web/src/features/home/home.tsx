@@ -106,6 +106,9 @@ export function Home({
   const [autonomy, setAutonomy] = useState("off");
   const [includeChanges, setIncludeChanges] = useState(false);
   const [includeUntracked, setIncludeUntracked] = useState(false);
+  // Choices persist across project switches; Autopilot needs a committed start.
+  const workingChanges = localProject && includeChanges;
+  const taskAutonomy = workingChanges ? "off" : autonomy;
   const [busy, setBusy] = useState(false);
   const submitting = useRef(false);
   const toast = useToast();
@@ -153,9 +156,8 @@ export function Home({
             githubAccount,
             presetId: preset,
             prompt: value,
-            includeChanges: localProject && includeChanges,
-            includeUntracked:
-              localProject && includeChanges && includeUntracked,
+            includeChanges: workingChanges,
+            includeUntracked: workingChanges && includeUntracked,
             execution,
             tools,
           },
@@ -163,11 +165,11 @@ export function Home({
       );
       setPrompt("");
       setTools({ skillIds: null, mcpServerIds: null });
-      if (autonomy !== "off") {
+      if (taskAutonomy !== "off") {
         try {
           await send({
             path: `tasks/${task.id}/autonomy`,
-            body: { mode: autonomy },
+            body: { mode: taskAutonomy },
           });
         } catch (e) {
           toast({
@@ -365,9 +367,9 @@ export function Home({
                           effort: "",
                         });
                     }}
-                    autonomy={autonomy}
+                    autonomy={taskAutonomy}
                     onAutonomy={setAutonomy}
-                    workingChanges={includeChanges && localProject}
+                    workingChanges={workingChanges}
                   />
                 </div>
               </div>

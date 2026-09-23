@@ -12,7 +12,14 @@ const disallowedElements = ["img"];
 function MarkdownLink({ children, href }: ComponentProps<"a">) {
   const openFile = useContext(OpenFileContext);
   if (openFile && href?.startsWith("/work/repo/")) {
-    const path = href.slice(11).replace(/:\d+(?::\d+)?$/, "");
+    // react-markdown percent-encodes hrefs; drop #L12-L20 anchors first so an
+    // encoded "#" in a file name survives decoding.
+    const raw = href.slice(11).replace(/#L\d+(?:-L\d+)?$/, "");
+    let path = raw;
+    try {
+      path = decodeURIComponent(raw);
+    } catch {}
+    path = path.replace(/:\d+(?::\d+)?$/, "");
     return (
       <button className="inline-file-link" onClick={() => openFile(path)}>
         {children}

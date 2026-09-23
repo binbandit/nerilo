@@ -13,6 +13,11 @@ import {
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+const SAFE_CONTENT_TYPES = new Set([
+  "application/json",
+  "text/event-stream",
+  "text/plain",
+]);
 function equal(a: string, b: string) {
   const x = Buffer.from(a),
     y = Buffer.from(b);
@@ -147,14 +152,22 @@ async function handler(
     } finally {
       if (connectionTimeout) clearTimeout(connectionTimeout);
     }
+    // A registered machine is not trusted to serve active content in
+    // Nerilo's origin: only the types the daemon emits pass through.
+    const contentType =
+      response.headers.get("content-type") ?? "application/json";
+    const safe = SAFE_CONTENT_TYPES.has(
+      contentType.split(";")[0].trim().toLowerCase(),
+    );
     const outgoing = new Headers({
-      "Content-Type":
-        response.headers.get("content-type") ?? "application/json",
+      "Content-Type": safe ? contentType : "application/octet-stream",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "sandbox; default-src 'none'",
     });
     if (sessionCookie) outgoing.set("Set-Cookie", sessionCookie);
-    if (response.headers.get("content-disposition"))
+    if (!safe) outgoing.set("Content-Disposition", "attachment");
+    else if (response.headers.get("content-disposition"))
       outgoing.set(
         "Content-Disposition",
         response.headers.get("content-disposition")!,

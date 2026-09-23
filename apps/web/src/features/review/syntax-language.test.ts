@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
 import {
+  diffHunkLines,
   diffSyntaxLines,
   diffSyntaxSource,
   hasSyntax,
@@ -46,11 +47,53 @@ test("mixed diffs preserve code highlighting without coloring text files", () =>
 
 test("diff lexing excludes prose and metadata without shifting source offsets", () => {
   const text =
-    '--- a/notes.txt\n+++ b/notes.txt\n@@ -1 +1 @@\n+true 42 \"hello\"\n--- a/app.ts\n+++ b/app.ts\n@@ -1 +1 @@\n+const count = 42;\n';
+    '--- a/notes.txt\n+++ b/notes.txt\n@@ -0,0 +1 @@\n+true 42 \"hello\"\n--- a/app.ts\n+++ b/app.ts\n@@ -0,0 +1 @@\n+const count = 42;\n';
   const source = diffSyntaxSource(text);
   expect(source.length).toBe(text.length);
   expect(source).not.toContain("hello");
   expect(source).not.toContain("---");
   expect(source.indexOf("const count")).toBe(text.indexOf("const count"));
   expect(source.split("\n").length).toBe(text.split("\n").length);
+});
+
+test("hunk content resembling file headers keeps highlighting and quoted paths decode", () => {
+  const text =
+    "diff --git a/q.sql b/q.sql\n--- a/q.sql\n+++ b/q.sql\n@@ -1,2 +1,2 @@\n--- removed comment\n+++ added text\n select 1;\ndiff --git a/n.txt b/n.txt\n--- a/n.txt\n+++ b/n.txt\n@@ -1 +1 @@\n-a\n+b\n";
+  expect(diffHunkLines(text)).toEqual([
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+  ]);
+  expect(diffSyntaxLines(text).slice(0, 7)).toEqual([
+    false,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+  ]);
+  expect(diffSyntaxLines(text).slice(8)).toEqual([
+    false,
+    false,
+    false,
+    false,
+    false,
+  ]);
+  const source = diffSyntaxSource(text);
+  expect(source).toContain("-- removed comment");
+  expect(source).toContain("select 1;");
+  expect(
+    diffSyntaxLines('--- "a/\\303\\244.py"\n+++ "b/\\303\\244.py"\n+x = 1\n'),
+  ).toEqual([true, true, true]);
 });

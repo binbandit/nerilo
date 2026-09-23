@@ -8,6 +8,7 @@ import {
 import { highlightSource } from "@/features/review/syntax-worker";
 import {
   hasSyntax,
+  diffHunkLines,
   diffSyntaxLines,
   diffSyntaxSource,
 } from "@/features/review/syntax-language";
@@ -116,6 +117,7 @@ function lineOffsets(lines: string[], separator = 0) {
 
 export function HighlightedDiff({ text }: { text: string }) {
   const syntaxLines = diffSyntaxLines(text);
+  const hunkLines = diffHunkLines(text);
   const { element, spans } = useSyntax<HTMLPreElement>(
     diffSyntaxSource(text),
     syntaxLines.some(Boolean),
@@ -131,7 +133,8 @@ export function HighlightedDiff({ text }: { text: string }) {
       {lineOffsets(text.split(/(?<=\n)/)).map(
         ({ text: line, start, end }, index) => {
           const className =
-            line.startsWith("+++") || line.startsWith("---")
+            !hunkLines[index] &&
+            (line.startsWith("+++") || line.startsWith("---"))
               ? "diff-file"
               : line.startsWith("+")
                 ? "diff-add"

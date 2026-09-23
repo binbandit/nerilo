@@ -175,6 +175,15 @@ export function Sidebar({
       data?.tasks.filter((task) => task.projectId === projectId) ?? [],
       order.tasks[projectId] ?? [],
     );
+  // Rows the user can see; hidden tasks and projects keep their stored order.
+  const visibleSiblings = (item: DragItem) =>
+    item.kind === "project"
+      ? projects.filter(
+          (project) =>
+            !(query || filter !== "all") ||
+            projectTasks(project.id).some(matches),
+        )
+      : projectTasks(item.projectId!).filter(matches);
   const move = (item: DragItem, overId: string, edge: "before" | "after") => {
     if (saving.current || item.id === overId) return;
     const rowKey = `${item.kind}:${item.id}`;
@@ -184,6 +193,8 @@ export function Sidebar({
       item.kind === "project" ? projects : projectTasks(item.projectId!)
     ).map((value) => value.id);
     const next = reorder(ids, item.id, overId, edge);
+    const visible = new Set(visibleSiblings(item).map((value) => value.id));
+    const position = next.filter((id) => visible.has(id)).indexOf(item.id) + 1;
     saving.current = true;
     setOrderError("");
     startTransition(async () => {
@@ -204,7 +215,7 @@ export function Sidebar({
         });
 
         setAnnouncement(
-          `${item.kind === "project" ? "Project" : "Task"} moved to position ${next.indexOf(item.id) + 1}.`,
+          `${item.kind === "project" ? "Project" : "Task"} moved to position ${position}.`,
         );
       } catch (error) {
         setOrderError(error instanceof Error ? error.message : String(error));
@@ -261,14 +272,7 @@ export function Sidebar({
       return false;
     event.preventDefault();
     event.stopPropagation();
-    const siblings =
-      item.kind === "project"
-        ? projects.filter(
-            (project) =>
-              !(query || filter !== "all") ||
-              projectTasks(project.id).some(matches),
-          )
-        : projectTasks(item.projectId!).filter(matches);
+    const siblings = visibleSiblings(item);
     const offset = up ? -1 : 1;
     const neighbor =
       siblings[siblings.findIndex((value) => value.id === item.id) + offset];

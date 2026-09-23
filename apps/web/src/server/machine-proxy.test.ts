@@ -61,6 +61,13 @@ test("machine proxy preserves authentication, routes every resource to its owner
             "Content-Disposition": "attachment; filename=change.patch",
           },
         });
+      if (url.pathname.endsWith("/hostile"))
+        return new Response("<script>alert(1)</script>", {
+          headers: {
+            "Content-Type": "text/html",
+            "Content-Disposition": "inline",
+          },
+        });
       return Response.json({ remote: true });
     },
   });
@@ -143,6 +150,14 @@ test("machine proxy preserves authentication, routes every resource to its owner
     const patch = await call("tasks/test/patch", { machine: machine.id });
     expect(await patch.text()).toBe("remote-patch");
     expect(patch.headers.get("content-disposition")).toContain("change.patch");
+    expect(patch.headers.get("content-type")).toBe("text/plain");
+    expect(patch.headers.get("content-security-policy")).toContain("sandbox");
+    const hostile = await call("tasks/test/hostile", { machine: machine.id });
+    expect(hostile.headers.get("content-type")).toBe(
+      "application/octet-stream",
+    );
+    expect(hostile.headers.get("content-disposition")).toBe("attachment");
+    expect(hostile.headers.get("content-security-policy")).toContain("sandbox");
     const count = forwarded.length;
     expect(
       (await call("tasks", { machine: randomUUID(), body: prompt })).status,

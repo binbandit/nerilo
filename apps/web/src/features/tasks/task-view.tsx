@@ -118,8 +118,12 @@ export function TaskView({
     (confirm.turnId !== latest?.id || running),
   );
   const now = useCurrentTime(
-    task.pending.some((input) => Boolean(input.scheduledAt)),
+    Boolean(scheduledAt) ||
+      task.pending.some((input) => Boolean(input.scheduledAt)),
   );
+  // A schedule restored from a draft may already have passed.
+  const futureSchedule =
+    scheduledAt && Date.parse(scheduledAt) > now ? scheduledAt : null;
   const nextScheduledAt =
     task.status === "queued" &&
     task.pending.length > 0 &&
@@ -207,9 +211,10 @@ export function TaskView({
   );
   const submit = async (value: string) => {
     if (busy || !value.trim()) return;
-    if (
-      await act("follow-up", { text: value, scheduledAt: scheduledAt || null })
-    ) {
+    // Send an expired draft schedule immediately rather than have it rejected.
+    const schedule =
+      scheduledAt && Date.parse(scheduledAt) > Date.now() ? scheduledAt : null;
+    if (await act("follow-up", { text: value, scheduledAt: schedule })) {
       setPrompt("");
       setScheduledAt("");
     }
@@ -649,7 +654,7 @@ export function TaskView({
                       }}
                     />
                     <SchedulePicker
-                      value={scheduledAt || null}
+                      value={futureSchedule}
                       disabled={busy}
                       onChange={(value) => setScheduledAt(value ?? "")}
                     />

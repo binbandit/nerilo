@@ -182,9 +182,8 @@ export function parseReviewDiff(text: string): ReviewFile[] {
     if (row.startsWith("@@")) {
       finishHunk();
       seenHunk = true;
-      const match = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(?: .*)?$/.exec(
-        row,
-      );
+      const match =
+        /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(?: [\s\S]*)?$/.exec(row);
       const [oldLine, oldCount, newLine, newCount] = match
         ? [
             Number(match[1]),

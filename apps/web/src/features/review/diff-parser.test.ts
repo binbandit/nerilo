@@ -48,6 +48,22 @@ test("hunk coordinates stay accurate across context, replacements, and separated
   ).toBe(files[0]!.lines.length);
 });
 
+test("hunk function context may contain line separators and carriage returns", () => {
+  for (const context of ["a\u2028b", "a\u2029b", "a\rb", "a\r"]) {
+    const [file] = parseReviewDiff(
+      `diff --git a/file.ts b/file.ts\n--- a/file.ts\n+++ b/file.ts\n@@ -1 +1 @@ ${context}\n-old\n+new\n`,
+    );
+    expect(
+      file!.lines
+        .filter(({ kind }) => kind !== "meta")
+        .map(({ oldLine, newLine }) => [oldLine, newLine]),
+    ).toEqual([
+      [1, null],
+      [null, 1],
+    ]);
+  }
+});
+
 test("new, deleted, and renamed files preserve the path on the correct side", () => {
   const files = parseReviewDiff(
     [

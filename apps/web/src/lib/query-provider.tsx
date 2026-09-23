@@ -6,6 +6,7 @@ import {
   useMemo,
   useContext,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -56,6 +57,8 @@ function MachineSession({ children }: { children: ReactNode }) {
     enabled: selection !== null,
   });
   const ready = session.data === true;
+  const [reopen, setReopen] = useState(0);
+  const failures = useRef(0);
   useEffect(() => {
     if (!ready) return;
     const snapshot = client.getQueryData<{ sequence: number }>(
@@ -72,10 +75,25 @@ function MachineSession({ children }: { children: ReactNode }) {
         { cancelRefetch: false },
       );
     };
+    // The browser retries dropped streams itself, but gives up for good when a
+    // reconnect gets a non-stream response (e.g. a 503 while the daemon
+    // restarts). Reopen those with backoff.
+    let retry: ReturnType<typeof setTimeout> | undefined;
     source.addEventListener("change", refresh);
-    source.addEventListener("open", refresh);
-    return () => source.close();
-  }, [client, machineId, ready]);
+    source.addEventListener("open", () => {
+      failures.current = 0;
+      refresh();
+    });
+    source.addEventListener("error", () => {
+      if (source.readyState !== EventSource.CLOSED || retry) return;
+      const delay = Math.min(1000 * 2 ** failures.current++, 30_000);
+      retry = setTimeout(() => setReopen((count) => count + 1), delay);
+    });
+    return () => {
+      clearTimeout(retry);
+      source.close();
+    };
+  }, [client, machineId, ready, reopen]);
 
   const { refetch, isFetched, error } = session;
   const reconnect = useCallback(async () => {

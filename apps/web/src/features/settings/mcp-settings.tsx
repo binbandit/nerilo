@@ -321,9 +321,7 @@ function McpServerDialog({
               args:
                 server?.transport === "stdio" && args === server.args.join("\n")
                   ? server.args
-                  : args
-                    ? args.replace(/\r\n/g, "\n").split("\n")
-                    : [],
+                  : args.replace(/\r\n/g, "\n").split("\n").filter(Boolean),
               env: parseValues(env, "Environment variables"),
             }
           : {

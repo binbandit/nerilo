@@ -1,3 +1,5 @@
+import { readGitPath } from "@/features/review/diff-parser";
+
 const languages = new Set([
   "js",
   "javascript",
@@ -85,22 +87,45 @@ export function hasSyntax({
   return languages.has(language?.toLowerCase() ?? "");
 }
 
+/**
+ * Mark hunk content lines using each hunk header's counts, so content such as
+ * a removed `-- comment` is not mistaken for a `---` file header.
+ */
+export function diffHunkLines(text: string) {
+  let oldRemaining = 0;
+  let newRemaining = 0;
+  return text.split(/(?<=\n)/).map((line) => {
+    if (oldRemaining > 0 || newRemaining > 0) {
+      const prefix = line[0];
+      if (prefix === "\\") return true;
+      if (prefix === " " || prefix === "-" || prefix === "+") {
+        if (prefix !== "+") oldRemaining--;
+        if (prefix !== "-") newRemaining--;
+        return true;
+      }
+      oldRemaining = newRemaining = 0;
+    }
+    const hunk = /^@@ -\d+(?:,(\d+))? \+\d+(?:,(\d+))? @@/.exec(line);
+    if (hunk) {
+      oldRemaining = Number(hunk[1] ?? 1);
+      newRemaining = Number(hunk[2] ?? 1);
+    }
+    return false;
+  });
+}
+
 /** Track file boundaries so a mixed diff does not color prose as source code. */
 export function diffSyntaxLines(text: string) {
+  const hunks = diffHunkLines(text);
   let enabled = false;
-  return text.split(/(?<=\n)/).map((line) => {
+  return text.split(/(?<=\n)/).map((line, index) => {
+    if (hunks[index]) return enabled;
     if (line.startsWith("diff --git ")) enabled = false;
     if (/^(---|\+\+\+) /.test(line)) {
-      let path = line.slice(4).trimEnd();
-      if (path.startsWith('"')) {
-        try {
-          path = JSON.parse(path) as string;
-        } catch {
-          path = "";
-        }
-      } else path = path.split("\t")[0];
+      const path = line.slice(4).trimEnd();
       // A deletion's new path is /dev/null; retain the old file's language.
-      if (path !== "/dev/null") enabled = hasSyntax({ path });
+      if (path.split("\t")[0] !== "/dev/null")
+        enabled = hasSyntax({ path: readGitPath(path) ?? "" });
     }
     return enabled;
   });
@@ -109,14 +134,11 @@ export function diffSyntaxLines(text: string) {
 /** Keep offsets intact while sending only code hunks to the lexer. */
 export function diffSyntaxSource(text: string) {
   const enabled = diffSyntaxLines(text);
-  let inHunk = false;
+  const hunks = diffHunkLines(text);
   return text
     .split(/(?<=\n)/)
     .map((line, index) => {
-      if (line.startsWith("diff --git ") || /^(---|\+\+\+) /.test(line))
-        inHunk = false;
-      if (line.startsWith("@@")) inHunk = true;
-      if (inHunk && enabled[index] && /^[ +\-]/.test(line))
+      if (hunks[index] && enabled[index] && /^[ +\-]/.test(line))
         return " " + line.slice(1);
       return line.replace(/[^\r\n]/g, " ");
     })
