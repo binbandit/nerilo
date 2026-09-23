@@ -1,6 +1,14 @@
 import type { GitRemoteStatus } from "@nerilo/protocol";
 import { checked, command } from "../platform/config";
 
+/** Full ref, because `--short` yields `heads/<name>` when a tag or stash shares it. */
+export async function currentBranch(path: string) {
+  const ref = await checked(["git", "-C", path, "symbolic-ref", "HEAD"]);
+  if (!ref.startsWith("refs/heads/"))
+    throw new Error("Check out a local branch before continuing.");
+  return ref.slice("refs/heads/".length);
+}
+
 type Comparison = {
   path: string;
   branch: string;
@@ -41,14 +49,9 @@ export async function compareGitRemote(
   const options = { timeout: 60000, env: { GIT_NO_REPLACE_OBJECTS: "1" } };
   const unavailable = (error: string) => unavailableRemoteStatus(local, error);
   const current = async () => {
-    const currentBranch = await checked([
-      ...git,
-      "symbolic-ref",
-      "--short",
-      "HEAD",
-    ]);
+    const branchNow = await currentBranch(path);
     const currentHead = await checked([...git, "rev-parse", "HEAD"]);
-    return currentBranch === branch && currentHead === head;
+    return branchNow === branch && currentHead === head;
   };
   const readRemote = async () => {
     const output = await network.checked(

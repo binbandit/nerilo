@@ -43,3 +43,29 @@ test("local snapshots preserve staged work and include new files only when reque
     await rm(root, { recursive: true, force: true });
   }
 }, 15000);
+
+test("local snapshots stay appliable under user diff settings", async () => {
+  const root = await mkdtemp(join(tmpdir(), "nerilo-working-"));
+  const repo = join(root, "repo");
+  const git = (...args: string[]) => checked(["git", "-C", repo, ...args]);
+  try {
+    await checked(["git", "init", repo]);
+    await git("config", "user.name", "Fixture");
+    await git("config", "user.email", "fixture@example.test");
+    await writeFile(join(repo, "file.txt"), "original\n");
+    await git("add", ".");
+    await git("commit", "-m", "Base");
+    await git("config", "diff.noprefix", "true");
+    await git("config", "color.ui", "always");
+    await writeFile(join(repo, "file.txt"), "changed\n");
+    const patch = await workingChanges(repo, root, false);
+    expect(patch).toContain("diff --git a/file.txt b/file.txt");
+    expect(patch).not.toContain("\x1b[");
+    const clone = join(root, "clone");
+    await checked(["git", "clone", repo, clone]);
+    await checked(["git", "-C", clone, "apply", "-"], { input: patch });
+    expect(await readFile(join(clone, "file.txt"), "utf8")).toBe("changed\n");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}, 15000);

@@ -14,10 +14,15 @@ export async function bundleRevision(
       "git",
       "-C",
       repository,
-      "-c",
-      "credential.helper=",
-      "-c",
-      "credential.helper=!gh auth git-credential",
+      // Local paths need no GitHub login, and the helper would require one.
+      ...(/^https:\/\//.test(remote)
+        ? [
+            "-c",
+            "credential.helper=",
+            "-c",
+            "credential.helper=!gh auth git-credential",
+          ]
+        : []),
       "fetch",
       "--no-tags",
       "--",

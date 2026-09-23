@@ -810,12 +810,11 @@ async function publish(
       state.base,
       "--state",
       "all",
-      "--limit",
-      "1",
+      // --head matches branch names only, so skip same-named fork PRs.
       "--json",
-      "url",
+      "url,isCrossRepository",
       "--jq",
-      ".[0].url // empty",
+      "map(select(.isCrossRepository | not))[0].url // empty",
     ]);
     if (existing) state.prUrl = existing.trim();
     else {

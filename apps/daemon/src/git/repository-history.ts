@@ -1,6 +1,6 @@
 import { repositoryEventSchema, type RepositoryEvent } from "@nerilo/protocol";
 import type { Store } from "../platform/store";
-import type { PullRequestObservation } from "./pr-observer";
+import { isAnonymousAuthor, type PullRequestObservation } from "./pr-observer";
 
 export function captureRepositoryAction(
   store: Store,
@@ -55,7 +55,7 @@ export function observationHistory(
               : feedback.kind === "review"
                 ? "reviewed the pull request"
                 : "left feedback",
-        actor: feedback.author === "unknown" ? null : feedback.author,
+        actor: isAnonymousAuthor(feedback.author) ? null : feedback.author,
         body: feedback.body.slice(0, 16000),
         url: feedback.url,
         occurredAt: feedback.updatedAt || observation.observedAt,
@@ -161,7 +161,7 @@ export function repairOrigin(observation: PullRequestObservation) {
             feedback.actionable && changed.has(feedback.fingerprint),
         )
         .map((feedback) => feedback.author)
-        .filter((author) => author && author !== "unknown"),
+        .filter((author) => author && !isAnonymousAuthor(author)),
     ),
   ];
   const action =

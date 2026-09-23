@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { gitRemoteStatusSchema } from "@nerilo/protocol";
 import { checked } from "../platform/config";
-import { compareGitRemote } from "./git-remote-status";
+import { compareGitRemote, currentBranch } from "./git-remote-status";
 
 async function fixture() {
   const directory = await mkdtemp(join(tmpdir(), "nerilo-remote-status-"));
@@ -232,5 +232,30 @@ test("remote or local movement during comparison invalidates the captured result
     });
   } finally {
     await f.cleanup();
+  }
+});
+
+test("current branch stays unambiguous when a tag shares its name", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "nerilo-branch-name-"));
+  const git = ["git", "-C", directory];
+  try {
+    await checked(["git", "init", "-b", "release", directory]);
+    await checked([
+      ...git,
+      "-c",
+      "user.name=Fixture",
+      "-c",
+      "user.email=fixture@example.test",
+      "commit",
+      "--allow-empty",
+      "-m",
+      "Initial",
+    ]);
+    await checked([...git, "tag", "release"]);
+    expect(await currentBranch(directory)).toBe("release");
+    await checked([...git, "checkout", "--detach"]);
+    await expect(currentBranch(directory)).rejects.toThrow();
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });

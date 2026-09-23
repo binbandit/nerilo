@@ -24,6 +24,10 @@ export async function workingChanges(
       "--binary",
       "--no-ext-diff",
       "--no-textconv",
+      // User diff settings (noprefix, color=always) would make the patch unappliable.
+      "--no-color",
+      "--src-prefix=a/",
+      "--dst-prefix=b/",
       "HEAD",
     ],
     options,

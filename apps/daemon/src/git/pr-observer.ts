@@ -3,6 +3,12 @@ import { z } from "zod";
 import { checked, command } from "../platform/config";
 import { githubPullRequestURL } from "./pull-requests";
 
+const deletedAuthor = "deleted user";
+/** Feedback from deleted accounts; "unknown" is kept for older observations. */
+export function isAnonymousAuthor(author: string) {
+  return author === deletedAuthor || author === "unknown";
+}
+
 // Policy sources: docs.github.com/en/rest/repos/rules#get-rules-for-a-branch,
 // docs.github.com/en/graphql/reference/branches and /pulls. Status checks are
 // read from commits/{head}/check-runs and commits/{head}/status, never another SHA.
@@ -334,7 +340,7 @@ function currentReviewFeedback(items: ObservedFeedback[]) {
       !["APPROVED", "CHANGES_REQUESTED", "DISMISSED"].includes(
         item.state ?? "",
       ) ||
-      ["unknown", "deleted user"].includes(item.author) ||
+      isAnonymousAuthor(item.author) ||
       !Number.isFinite(Date.parse(item.updatedAt))
     )
       continue;
@@ -824,7 +830,7 @@ export async function observePullRequest(input: {
     id: `${kind}:${value.databaseId ?? value.id}`,
     fingerprint: `${kind}:${value.databaseId ?? value.id}:${fingerprint(value.body + value.updatedAt)}`,
     kind,
-    author: value.author?.login ?? "deleted user",
+    author: value.author?.login ?? deletedAuthor,
     body: value.body.slice(0, 8000),
     url: value.url,
     updatedAt: value.updatedAt,
@@ -848,7 +854,7 @@ export async function observePullRequest(input: {
         id: `review:${value.databaseId ?? value.id}`,
         fingerprint: `review:${value.databaseId ?? value.id}:${fingerprint(value.body + value.state + value.submittedAt)}`,
         kind: "review" as const,
-        author: value.author?.login ?? "deleted user",
+        author: value.author?.login ?? deletedAuthor,
         body: value.body.slice(0, 8000),
         url: value.url,
         updatedAt: value.submittedAt ?? "",

@@ -174,17 +174,25 @@ export async function refreshLinkedPullRequests(
   } = {},
 ) {
   const observations = new Map<string, Promise<PullRequestObservation>>();
+  // Stamp attempts with the refresh start; finish times drift by the GitHub
+  // round trips before them and would skip every other 60s tick.
+  const attemptStarted = new Date().toISOString();
   for (const task of store.all("task").filter((task) => !task.archived)) {
     for (const previous of task.pullRequests) {
       const attemptedAt = previous.attemptedAt ?? previous.syncedAt;
       if (attemptedAt && Date.now() - Date.parse(attemptedAt) < 60000) continue;
+      // The task may be deleted while earlier reads are awaited.
+      if (!store.get("task", task.id)) break;
       let next: PullRequest = previous;
       let observation: PullRequestObservation | null = null;
       const account = taskGithubAccount(store, task.id);
       const observationKey = JSON.stringify([account, previous.url]);
       try {
         await withGithubAccount(account, async () => {
-          next = await (history.read ?? readPullRequest)(previous.url);
+          next = {
+            ...(await (history.read ?? readPullRequest)(previous.url)),
+            attemptedAt: attemptStarted,
+          };
           if (
             history.observe &&
             !history.autopilotObserves?.(task.id, previous.url)
@@ -205,7 +213,7 @@ export async function refreshLinkedPullRequests(
       } catch (e) {
         next = {
           ...previous,
-          attemptedAt: new Date().toISOString(),
+          attemptedAt: attemptStarted,
           error: e instanceof Error ? e.message : String(e),
         };
       }

@@ -14,7 +14,11 @@ import { checked, command, dataDir } from "../platform/config";
 import { projectRepository, readPullRequest } from "./pull-requests";
 import type { Store } from "../platform/store";
 import { captureRepositoryAction } from "./repository-history";
-import { compareGitRemote, unavailableRemoteStatus } from "./git-remote-status";
+import {
+  compareGitRemote,
+  currentBranch,
+  unavailableRemoteStatus,
+} from "./git-remote-status";
 import { readPullRequestTemplates } from "./pull-request-templates";
 import {
   readPublicationTarget,
@@ -116,13 +120,14 @@ async function review(path: string) {
   const git = ["git", "-C", path];
   try {
     const head = await checked([...git, "rev-parse", "HEAD"]);
-    const branch = await checked([...git, "symbolic-ref", "--short", "HEAD"]);
+    const branch = await currentBranch(path);
     await checked([...git, "read-tree", "HEAD"], { env });
     await checked([...git, "add", "-A", "--", "."], { env });
     const tree = await checked([...git, "write-tree"], { env });
     const files = await checked([
       ...git,
       "diff",
+      "--no-color",
       "--name-status",
       head,
       tree,
@@ -133,6 +138,9 @@ async function review(path: string) {
       "diff",
       "--no-ext-diff",
       "--no-textconv",
+      "--no-color",
+      "--src-prefix=a/",
+      "--dst-prefix=b/",
       head,
       tree,
       "--",
@@ -201,6 +209,9 @@ export async function gitStatus(store: Store, id: string): Promise<GitStatus> {
         "diff",
         "--no-ext-diff",
         "--no-textconv",
+        "--no-color",
+        "--src-prefix=a/",
+        "--dst-prefix=b/",
         base,
         "HEAD",
         "--",
@@ -236,14 +247,7 @@ export async function gitRemoteStatus(
 ) {
   const { project, path, turn } = await context(store, id);
   const head = await checked(["git", "-C", path, "rev-parse", "HEAD"]);
-  const branch = await checked([
-    "git",
-    "-C",
-    path,
-    "symbolic-ref",
-    "--short",
-    "HEAD",
-  ]);
+  const branch = await currentBranch(path);
   const local = { path, head, branch };
   const repository = await projectRepository(project);
   if (!repository)
@@ -261,14 +265,7 @@ export async function gitRemoteStatus(
       fresh.path !== path ||
       (await projectRepository(fresh.project)) !== repository ||
       (await checked(["git", "-C", path, "rev-parse", "HEAD"])) !== head ||
-      (await checked([
-        "git",
-        "-C",
-        path,
-        "symbolic-ref",
-        "--short",
-        "HEAD",
-      ])) !== branch
+      (await currentBranch(path)) !== branch
     )
       throw new Error("Checkout changed.");
   } catch {
@@ -463,8 +460,12 @@ export async function gitAction(
             { timeout: 60000 },
           );
         if (destination) {
-          const fresh = store.get("task", id)!;
-          if (fresh.checkout && (await realpath(fresh.checkout.path)) === path)
+          const checkoutPath = store.get("task", id)?.checkout?.path;
+          const samePath =
+            checkoutPath && (await realpath(checkoutPath)) === path;
+          // Re-read after the await so concurrent PR refreshes are not lost.
+          const fresh = store.get("task", id);
+          if (samePath && fresh?.checkout?.path === checkoutPath)
             store.put("task", id, {
               ...fresh,
               checkout: {
@@ -512,10 +513,11 @@ export async function gitAction(
           input.base,
           "--state",
           "open",
+          // --head matches branch names only, so skip same-named fork PRs.
           "--json",
-          "url",
+          "url,isCrossRepository",
           "--jq",
-          ".[0].url // empty",
+          "map(select(.isCrossRepository | not))[0].url // empty",
         ]);
         let url = existing;
         if (!url) {
