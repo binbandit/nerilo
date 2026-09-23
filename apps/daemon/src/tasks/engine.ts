@@ -264,7 +264,7 @@ export class Engine {
         }
         this.launching.add(task.id);
         void withTaskGithubAccount(this.store, task.id, () => this.launch(task))
-          .catch((error) => this.fail(task.id, String(error)))
+          .catch((error) => this.launchFailed(task.id, error))
           .finally(() => this.launching.delete(task.id));
       }
     } finally {
@@ -813,6 +813,22 @@ export class Engine {
       if (currentTurn.sandbox?.network === "provider-only")
         void cleanupProviderNetwork(turnId).catch(() => {});
     }
+  }
+  private async launchFailed(taskId: string, error: unknown) {
+    const task = this.store.get("task", taskId);
+    const turn = task?.activeTurnId
+      ? this.store.get("turn", task.activeTurnId)
+      : null;
+    // Nothing reconciles a turn container once the launch is abandoned.
+    if (turn)
+      await command(["docker", "rm", "-f", turn.container], {
+        timeout: 10000,
+      }).catch(() => {});
+    // Pausing during preparation removes the bootstrap container, which
+    // surfaces here as a launch error.
+    if (turn && this.store.get("task", taskId)?.stopRequested)
+      this.finishStopped(taskId);
+    else this.fail(taskId, String(error));
   }
   fail(taskId: string, message: string) {
     const task = this.store.get("task", taskId);
