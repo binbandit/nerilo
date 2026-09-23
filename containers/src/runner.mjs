@@ -14,7 +14,12 @@ import { prepareSkills, clearSkills } from "./skills.mjs";
 
 import { run } from "./process.mjs";
 import { runAgent } from "./agent.mjs";
-import { captureWorkspace, workspacePrepared } from "./git.mjs";
+import {
+  captureWorkspace,
+  pendingSetup,
+  setupPendingPath,
+  workspacePrepared,
+} from "./git.mjs";
 import { prepareConnection, clearConnection } from "./connection.mjs";
 const codexHome = process.env.CODEX_HOME || "/home/node/.codex";
 const codexAuthPath = `${codexHome}/auth.json`;
@@ -115,6 +120,8 @@ try {
       ]);
       if (patch.code) throw new Error(patch.err);
     }
+    if (config.setup || config.retrySetup)
+      await writeFile(setupPendingPath(), "");
     // Removing the bundle marks preparation complete; it must come last.
     await rm("/work/source.bundle", { force: true });
     await rm("/work/changes.patch", { force: true });
@@ -122,12 +129,14 @@ try {
   const base =
     config.baseCommit || (await run(["git", "rev-parse", "HEAD"])).out.trim();
   emit("base", { commit: base });
-  if (config.setup && !config.readOnly) {
-    emit("activity", { text: "Preparing project: " + config.setup });
-    const setup = await run(["sh", "-lc", config.setup], { timeout: 300000 });
+  const setupCommand = pendingSetup(config);
+  if (setupCommand && !config.readOnly) {
+    emit("activity", { text: "Preparing project: " + setupCommand });
+    const setup = await run(["sh", "-lc", setupCommand], { timeout: 300000 });
     emit("activity", { text: (setup.out + setup.err).slice(-30000) });
     if (setup.code)
       throw new Error("Project preparation failed. " + setup.err.slice(-2000));
+    await rm(setupPendingPath(), { force: true });
   }
   if (config.codexAuth)
     await writeFile(codexAuthPath, JSON.stringify(config.codexAuth), {

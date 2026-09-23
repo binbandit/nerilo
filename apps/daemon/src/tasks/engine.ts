@@ -502,6 +502,8 @@ export class Engine {
         {
           branch: `nerilo/${task.id.slice(0, 8)}`,
           setup: task.baseCommit ? "" : project.setup,
+          // Runs until setup succeeds once, e.g. after a failed first turn.
+          retrySetup: project.setup,
         },
         () => Boolean(this.store.get("task", task.id)?.stopRequested),
       );
@@ -561,6 +563,7 @@ export class Engine {
       baseCommit: current.baseCommit,
       branch: `nerilo/${task.id.slice(0, 8)}`,
       setup: bootstrap || task.baseCommit ? "" : project.setup,
+      retrySetup: bootstrap ? "" : project.setup,
       verify: secret.claudeLogin ? "" : project.verify,
       prompt: `${preset?.instructions ?? ""}\n\n${history ? `Earlier task conversation (may be truncated). The existing workspace is retained:\n${history}\n\n` : ""}${task.source ? `Workspace source: ${task.source.url} at ${task.source.headCommit}. PR comparison: git diff ${task.source.baseCommit}...${task.source.headCommit}. These revisions are pinned for this task; linked PR status may reflect newer pushes.\n\n` : ""}${notes ? `Project reference notes:\n${notes}\n\n` : ""}User request:\n${input.text}`,
       fixture: this.fixture,

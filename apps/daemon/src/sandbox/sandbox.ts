@@ -61,7 +61,7 @@ export async function prepareReadOnlyWorkspace({
 
 export async function bootstrapReadOnly(
   container: string,
-  input: { branch: string; setup: string },
+  input: { branch: string; setup: string; retrySetup: string },
   stopped: () => boolean,
 ) {
   const name = `${container}-bootstrap`;

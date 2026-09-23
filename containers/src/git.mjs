@@ -17,6 +17,19 @@ export function workspacePrepared(work = "/work") {
   );
 }
 
+/**
+ * Project setup must succeed once per workspace. Preparation leaves this marker
+ * until it does, so a setup that failed or was stopped runs again on retry.
+ */
+export const setupPendingPath = (work = "/work") =>
+  join(work, ".nerilo-setup-pending");
+
+/** The setup to run now: a first run, or `retrySetup` while still pending. */
+export function pendingSetup(config, work = "/work") {
+  if (config.setup) return config.setup;
+  return existsSync(setupPendingPath(work)) ? config.retrySetup || "" : "";
+}
+
 /** Capture one consistent tree without modifying the workspace or its index. */
 export async function captureWorkspace(base, cwd = "/work/repo") {
   const directory = await mkdtemp(join(tmpdir(), "nerilo-result-"));

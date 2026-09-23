@@ -2,7 +2,12 @@ import { test, expect } from "bun:test";
 import { mkdtemp, mkdir, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { captureWorkspace, workspacePrepared } from "./git.mjs";
+import {
+  captureWorkspace,
+  pendingSetup,
+  setupPendingPath,
+  workspacePrepared,
+} from "./git.mjs";
 import { run } from "./process.mjs";
 
 test("result capture preserves unusual filenames, staging, and an applicable binary patch", async () => {
@@ -99,6 +104,24 @@ test("an interrupted clone is not mistaken for a prepared workspace", async () =
     expect(workspacePrepared(work)).toBe(false);
     await rm(join(work, "source.bundle"));
     expect(workspacePrepared(work)).toBe(true);
+  } finally {
+    await rm(work, { recursive: true, force: true });
+  }
+});
+
+test("project setup reruns on retry until it has succeeded once", async () => {
+  const work = await mkdtemp(join(tmpdir(), "nerilo-setup-"));
+  try {
+    expect(pendingSetup({ setup: "npm ci", retrySetup: "npm ci" }, work)).toBe(
+      "npm ci",
+    );
+    // A prepared workspace without the marker already finished its setup.
+    expect(pendingSetup({ setup: "", retrySetup: "npm ci" }, work)).toBe("");
+    await Bun.write(setupPendingPath(work), "");
+    expect(pendingSetup({ setup: "", retrySetup: "npm ci" }, work)).toBe(
+      "npm ci",
+    );
+    expect(pendingSetup({ setup: "" }, work)).toBe("");
   } finally {
     await rm(work, { recursive: true, force: true });
   }

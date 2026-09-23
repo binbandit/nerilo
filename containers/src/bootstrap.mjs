@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline";
-import { workspacePrepared } from "./git.mjs";
+import { pendingSetup, setupPendingPath, workspacePrepared } from "./git.mjs";
 
 const lines = createInterface({ input: process.stdin });
 const config = await new Promise((resolve, reject) => {
@@ -39,8 +39,13 @@ if (!workspacePrepared()) {
   run(["git", "config", "user.email", "agent@nerilo.local"]);
   if (existsSync("/work/changes.patch"))
     run(["git", "apply", "--binary", "/work/changes.patch"]);
+  if (config.setup || config.retrySetup) writeFileSync(setupPendingPath(), "");
   // Removing the bundle marks preparation complete; it must come last.
   rmSync("/work/source.bundle", { force: true });
   rmSync("/work/changes.patch", { force: true });
 }
-if (config.setup) run(["sh", "-lc", config.setup]);
+const setup = pendingSetup(config);
+if (setup) {
+  run(["sh", "-lc", setup]);
+  rmSync(setupPendingPath(), { force: true });
+}
