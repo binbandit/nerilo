@@ -262,7 +262,11 @@ async function startLogin(onConnected: () => void) {
   );
   const timer = setTimeout(() => {
     if (active?.id !== id) return;
-    void cancelLogin().then(() => {
+    const cancelling = cancelLogin();
+    const cancelled = loginVersion;
+    void cancelling.then(() => {
+      // A new sign-in may have started while the container was removed.
+      if (loginVersion !== cancelled) return;
       state = {
         state: "failed",
         url: null,
@@ -300,9 +304,10 @@ async function startLogin(onConnected: () => void) {
         };
     })
     .catch(() => {
-      if (active?.id === id) {
+      // `active` is already cleared if saving the connection threw.
+      if (version === loginVersion) {
         clearTimeout(timer);
-        active = null;
+        if (active?.id === id) active = null;
         state = {
           state: "failed",
           url: null,

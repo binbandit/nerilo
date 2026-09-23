@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import { readRequestText } from "@nerilo/protocol";
+import { readRequestText, RequestTooLargeError } from "@nerilo/protocol";
 import { command, checked, dataDir, imageTag } from "../platform/config";
 
 type LoginState = {
@@ -144,9 +144,18 @@ export async function handleCodexLogin(
   if (new URL(request.url).pathname !== "/connections/codex/login") return null;
   try {
     if (request.method === "POST") {
-      const input = z
-        .object({ action: z.enum(["start", "cancel"]) })
-        .parse(JSON.parse(await readRequestText(request, 1000)));
+      let input: { action: "start" | "cancel" };
+      try {
+        input = z
+          .object({ action: z.enum(["start", "cancel"]) })
+          .parse(JSON.parse(await readRequestText(request, 1000)));
+      } catch (error) {
+        // A bad request must not discard a sign-in that is in progress.
+        return Response.json(
+          { error: "Invalid Codex sign-in request." },
+          { status: error instanceof RequestTooLargeError ? 413 : 400 },
+        );
+      }
       if (input.action === "start") await start(onConnected);
       else await cancelCodexLogin();
     } else if (request.method !== "GET")

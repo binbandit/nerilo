@@ -51,6 +51,9 @@ export async function handleTaskMutation(
   }
   const autonomy = path.match(/^\/tasks\/([^/]+)\/autonomy$/);
   if (autonomy) {
+    // Stopping must always work; background ticks honor it without the lock.
+    if (z.object({ mode: z.string().optional() }).parse(body).mode === "off")
+      return json(await configureAutonomy(store, autonomy[1], body));
     if (isTaskLocked(autonomy[1]))
       throw new Error(
         "This task is finishing a Git action. Try again shortly.",

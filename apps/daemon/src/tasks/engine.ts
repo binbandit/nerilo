@@ -590,7 +590,13 @@ export class Engine {
       { timeout: 4000 },
     ).catch(() => null);
     if (!inspect || inspect.code !== 0) {
-      if ((await this.runtime()).docker)
+      // Only a missing container is conclusive. A slow or erroring Docker
+      // retries, so a running agent is never orphaned by a failed task.
+      if (
+        inspect &&
+        /no such (object|container)/i.test(inspect.stderr) &&
+        (await this.runtime()).docker
+      )
         this.fail(
           task.id,
           "The task container is unavailable. Work may still be retained in its volume. Retry to continue.",
@@ -617,8 +623,8 @@ export class Engine {
     }
     const logs = await command(["docker", "logs", turn.container], {
       timeout: 8000,
-    });
-    if (logs.code === 0) {
+    }).catch(() => null);
+    if (logs?.code === 0) {
       const lines = logs.stdout.trim().split("\n").filter(Boolean);
       this.store.transaction(() => {
         let cursor = turn.cursor;
@@ -648,6 +654,8 @@ export class Engine {
       this.finishStopped(task.id);
       return;
     }
+    // Unread logs may still hold the result; retry rather than report it lost.
+    if (logs?.code !== 0) return;
     const currentTurn = this.store.get("turn", turn.id)!;
     if (
       currentTurn.check &&

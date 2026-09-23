@@ -12,7 +12,8 @@ import { dataDir, port, token } from "./platform/config";
 const lock = join(dataDir, "daemon.pid");
 if (existsSync(lock)) {
   const pid = Number(readFileSync(lock, "utf8"));
-  if (Number.isSafeInteger(pid) && pid > 0) {
+  // A stale lock can name this process after PID reuse (e.g. in containers).
+  if (Number.isSafeInteger(pid) && pid > 0 && pid !== process.pid) {
     try {
       process.kill(pid, 0);
       throw new Error(`Nerilo daemon is already running (PID ${pid}).`);
