@@ -141,7 +141,9 @@ export async function gatewayCredentials(provider: Provider) {
       throw new Error(
         "The gateway key helper failed or timed out. Check your key manager and reconnect.",
       );
-    key = result.stdout.trim();
+    // Login shells may print profile banners before the helper's output; keys
+    // never contain whitespace, so the key is the last non-empty line.
+    key = result.stdout.trim().split(/\r?\n/).at(-1)?.trim();
   }
   if (!key || !/^[\x21-\x7e]{1,8192}$/.test(key))
     throw new Error(
