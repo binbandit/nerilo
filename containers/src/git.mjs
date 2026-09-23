@@ -1,7 +1,21 @@
 import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { run } from "./process.mjs";
+
+/**
+ * Whether an earlier turn finished preparing the workspace. `git clone` creates
+ * .git immediately, so .git alone does not prove the clone completed. The staged
+ * bundle is removed only after checkout and patch application; while it remains,
+ * the repository holds nothing but interrupted preparation and can be recreated.
+ */
+export function workspacePrepared(work = "/work") {
+  return (
+    existsSync(join(work, "repo", ".git")) &&
+    !existsSync(join(work, "source.bundle"))
+  );
+}
 
 /** Capture one consistent tree without modifying the workspace or its index. */
 export async function captureWorkspace(base, cwd = "/work/repo") {

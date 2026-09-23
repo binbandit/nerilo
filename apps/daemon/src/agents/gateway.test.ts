@@ -15,6 +15,7 @@ test("gateway settings reject credential URLs, insecure endpoints and header inj
     "https://user:password@gateway.example.test",
     "https://gateway.example.test/?token=secret",
     "https://127.0.0.1",
+    "not a url",
   ])
     expect(gatewayInputSchema.safeParse({ ...base, baseUrl }).success).toBe(
       false,

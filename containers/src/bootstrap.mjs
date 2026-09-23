@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { createInterface } from "node:readline";
+import { workspacePrepared } from "./git.mjs";
 
 const lines = createInterface({ input: process.stdin });
 const config = await new Promise((resolve, reject) => {
@@ -30,13 +31,15 @@ function run(args, cwd = "/work/repo") {
   if (result.status !== 0)
     throw new Error(`${args[0]} failed during preparation.`);
 }
-if (!existsSync("/work/repo/.git")) {
+if (!workspacePrepared()) {
+  rmSync("/work/repo", { recursive: true, force: true });
   run(["git", "clone", "/work/source.bundle", "/work/repo"], "/work");
   run(["git", "checkout", "-B", config.branch]);
   run(["git", "config", "user.name", "Nerilo"]);
   run(["git", "config", "user.email", "agent@nerilo.local"]);
   if (existsSync("/work/changes.patch"))
     run(["git", "apply", "--binary", "/work/changes.patch"]);
+  // Removing the bundle marks preparation complete; it must come last.
   rmSync("/work/source.bundle", { force: true });
   rmSync("/work/changes.patch", { force: true });
 }

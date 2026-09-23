@@ -1,8 +1,8 @@
 import { test, expect } from "bun:test";
-import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { captureWorkspace } from "./git.mjs";
+import { captureWorkspace, workspacePrepared } from "./git.mjs";
 import { run } from "./process.mjs";
 
 test("result capture preserves unusual filenames, staging, and an applicable binary patch", async () => {
@@ -85,4 +85,21 @@ test("subprocess output retains split UTF-8 and reports timeouts even when SIGTE
     { cwd: tmpdir(), timeout: 100 },
   );
   expect(stalled.code).toBe(124);
+});
+
+test("an interrupted clone is not mistaken for a prepared workspace", async () => {
+  const work = await mkdtemp(join(tmpdir(), "nerilo-prepare-"));
+  try {
+    expect(workspacePrepared(work)).toBe(false);
+    await Bun.write(join(work, "source.bundle"), "bundle");
+    // git clone creates .git before any commit is fetched or checked out.
+    await mkdir(join(work, "repo"));
+    const init = await run(["git", "init", "-q"], { cwd: join(work, "repo") });
+    expect(init.code).toBe(0);
+    expect(workspacePrepared(work)).toBe(false);
+    await rm(join(work, "source.bundle"));
+    expect(workspacePrepared(work)).toBe(true);
+  } finally {
+    await rm(work, { recursive: true, force: true });
+  }
 });

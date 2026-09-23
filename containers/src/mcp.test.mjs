@@ -188,3 +188,53 @@ test("short secret values cannot corrupt the event JSON structure", () => {
     text: "[redacted] [redacted]",
   });
 });
+
+test("benign and short settings are not redacted from diffs and messages", () => {
+  const redactions = agentRedactions({
+    mcpServers: [
+      {
+        env: {
+          DEBUG: "1",
+          NODE_ENV: "production",
+          LOG_LEVEL: "verbose-debugging",
+          API_KEY: "short",
+          GITHUB_TOKEN: "ghp_16C7e42F292c6912E7710c838347Ae178B4a",
+          UNLABELLED: "3f9a1c7be52d4e08a6b1",
+          DATABASE_URL: "postgres://app:db-password@db.internal/app",
+        },
+        headers: {
+          "X-Region": "eu-west-1",
+          "X-Api-Key": "mcp-header-secret",
+          Authorization: "Bearer bearer-secret-value",
+        },
+        url: "https://example.com/mcp?version=2&format=json&key=url-secret-value",
+      },
+    ],
+    gateway: {
+      key: "gateway-key-value",
+      headers: {
+        "X-Provider": "openai",
+        "X-Tenant": "production",
+        "X-Gateway-Token": "gateway-header-secret",
+      },
+    },
+  });
+  const benign =
+    "-const debug = 1;\n+const debug = 10; // production verbose-debugging eu-west-1 openai version=2 short";
+  expect(redactOutput(benign, redactions)).toBe(benign);
+  expect(
+    redactOutput(
+      [
+        "ghp_16C7e42F292c6912E7710c838347Ae178B4a",
+        "3f9a1c7be52d4e08a6b1",
+        "db-password",
+        "mcp-header-secret",
+        "bearer-secret-value",
+        "url-secret-value",
+        "gateway-key-value",
+        "gateway-header-secret",
+      ].join(" "),
+      redactions,
+    ),
+  ).toBe(Array(8).fill("[redacted]").join(" "));
+});

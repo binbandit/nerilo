@@ -1,6 +1,8 @@
 import { harnessArguments } from "./harnesses.mjs";
 import { createInterface } from "node:readline";
 import { mkdir, writeFile, rm, access } from "node:fs/promises";
+import { rmSync } from "node:fs";
+import { constants } from "node:os";
 import {
   prepareMcpConfig,
   clearMcpConfig,
@@ -12,8 +14,25 @@ import { prepareSkills, clearSkills } from "./skills.mjs";
 
 import { run } from "./process.mjs";
 import { runAgent } from "./agent.mjs";
-import { captureWorkspace } from "./git.mjs";
+import { captureWorkspace, workspacePrepared } from "./git.mjs";
 import { prepareConnection, clearConnection } from "./connection.mjs";
+const codexHome = process.env.CODEX_HOME || "/home/node/.codex";
+const codexAuthPath = `${codexHome}/auth.json`;
+// Credentials are delivered only for the turn, not retained with session history.
+// The home volume persists, so every exit path removes them, including
+// process.exit and uncaught errors that skip `finally`. Other generated
+// configuration lives on the container's tmpfs.
+const removeCredentials = () => {
+  try {
+    rmSync(codexAuthPath, { force: true });
+  } catch {}
+};
+// A previous turn may have been killed before it could clean up.
+removeCredentials();
+process.on("exit", removeCredentials);
+// Node as PID 1 has no default SIGTERM action, so docker stop would SIGKILL it.
+for (const signal of ["SIGTERM", "SIGINT"])
+  process.once(signal, () => process.exit(128 + constants.signals[signal]));
 let redactions = [];
 const scrub = (text) => redactOutput(String(text), redactions);
 let outputBytes = 0;
@@ -75,8 +94,9 @@ try {
     phase: "preparing",
     text: "Preparing the isolated workspace",
   });
-  await mkdir("/home/node/.codex", { recursive: true });
-  if (!(await exists("/work/repo/.git"))) {
+  await mkdir(codexHome, { recursive: true });
+  if (!workspacePrepared()) {
+    await rm("/work/repo", { recursive: true, force: true });
     const clone = await run(
       ["git", "clone", "/work/source.bundle", "/work/repo"],
       { cwd: "/work" },
@@ -95,6 +115,7 @@ try {
       ]);
       if (patch.code) throw new Error(patch.err);
     }
+    // Removing the bundle marks preparation complete; it must come last.
     await rm("/work/source.bundle", { force: true });
     await rm("/work/changes.patch", { force: true });
   }
@@ -109,11 +130,9 @@ try {
       throw new Error("Project preparation failed. " + setup.err.slice(-2000));
   }
   if (config.codexAuth)
-    await writeFile(
-      "/home/node/.codex/auth.json",
-      JSON.stringify(config.codexAuth),
-      { mode: 0o600 },
-    );
+    await writeFile(codexAuthPath, JSON.stringify(config.codexAuth), {
+      mode: 0o600,
+    });
   emit("phase", { phase: "working", text: "Agent is working" });
   let sessionId = config.sessionId ?? null,
     summary = "",
@@ -180,8 +199,7 @@ try {
       emit,
     }));
   }
-  // Credentials are delivered only for the turn, not retained with session history.
-  await rm("/home/node/.codex/auth.json", { force: true });
+  await rm(codexAuthPath, { force: true });
   await clearMcpConfig();
   await clearSkills();
   await clearConnection();
@@ -219,7 +237,7 @@ try {
   });
   process.exitCode = 1;
 } finally {
-  await rm("/home/node/.codex/auth.json", { force: true }).catch(() => {});
+  removeCredentials();
   await clearMcpConfig().catch(() => {});
   await clearSkills().catch(() => {});
   await clearConnection().catch(() => {});

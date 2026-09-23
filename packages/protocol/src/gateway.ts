@@ -39,16 +39,20 @@ export const gatewayInputSchema = z.object({
     .max(2048)
     .url()
     .refine((value) => {
-      const url = new URL(value);
-      return (
-        url.protocol === "https:" &&
-        !url.username &&
-        !url.password &&
-        !url.search &&
-        !url.hash &&
-        /^[a-z0-9.-]+$/i.test(url.hostname) &&
-        !/^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)
-      );
+      try {
+        const url = new URL(value);
+        return (
+          url.protocol === "https:" &&
+          !url.username &&
+          !url.password &&
+          !url.search &&
+          !url.hash &&
+          /^[a-z0-9.-]+$/i.test(url.hostname) &&
+          !/^\d+\.\d+\.\d+\.\d+$/.test(url.hostname)
+        );
+      } catch {
+        return false;
+      }
     }, "Use an HTTPS gateway address with a hostname and no credentials, query, or fragment."),
   model: line.pipe(
     z
