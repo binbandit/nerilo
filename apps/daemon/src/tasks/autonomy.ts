@@ -97,8 +97,22 @@ function get(store: Store, id: string) {
     .get(id);
   return row ? savedSchema.parse(JSON.parse(row.data)) : null;
 }
-function save(store: Store, state: Saved) {
+/**
+ * Background work runs for minutes on an in-memory copy, so only settings
+ * changes may alter the mode; stopping Autopilot always wins, and a deleted
+ * task's row is not recreated.
+ */
+function save(store: Store, state: Saved, configured = false) {
   init(store);
+  if (!configured) {
+    const current = get(store, state.taskId);
+    if (!current) return state;
+    state.mode = current.mode;
+    if (current.mode === "off") {
+      state.status = current.status;
+      state.detail = current.detail;
+    }
+  }
   state.updatedAt = now();
   store.db
     .query(
@@ -137,12 +151,16 @@ export async function configureAutonomy(
   const prior = get(store, id);
   if (config.mode === "off") {
     if (prior)
-      save(store, {
-        ...prior,
-        mode: "off",
-        status: "off",
-        detail: "Autopilot stopped.",
-      });
+      save(
+        store,
+        {
+          ...prior,
+          mode: "off",
+          status: "off",
+          detail: "Autopilot stopped.",
+        },
+        true,
+      );
     return autonomyStatus(store, id);
   }
   if (task.archived)
@@ -304,7 +322,7 @@ export async function configureAutonomy(
       throw error;
     }
   }
-  save(store, state);
+  save(store, state, true);
   if (adopted && candidate)
     captureRepositoryAction(store, id, {
       id: `pr-adopted:${candidate.url}`,
@@ -1051,11 +1069,13 @@ export async function tickAutonomy(
   summaryFixtures.set(store, engine.fixture);
   const io = { ...defaultIO, ...overrides };
   init(store);
-  for (const row of store.db
-    .query<{ data: string }, []>("SELECT data FROM task_autonomy")
+  for (const { taskId } of store.db
+    .query<{ taskId: string }, []>("SELECT taskId FROM task_autonomy")
     .all()) {
-    const state = savedSchema.parse(JSON.parse(row.data));
+    // Read each state when it is reached; earlier tasks may take minutes.
+    const state = get(store, taskId);
     if (
+      !state ||
       state.mode === "off" ||
       ["merged", "closed"].includes(state.status) ||
       busy.has(state.taskId) ||
@@ -1182,6 +1202,7 @@ export async function tickAutonomy(
               );
               return;
             }
+            if (get(store, state.taskId)?.mode !== "merge") return;
             idle(store, state.taskId);
             const response = z
               .object({ merged: z.boolean(), message: z.string() })

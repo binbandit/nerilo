@@ -41,13 +41,16 @@ const tick = setInterval(
       ),
   1000,
 );
-const autonomyTick = setInterval(
-  () =>
-    void tickAutonomy(store, engine).catch((reason) =>
-      console.error("Autopilot:", String(reason)),
-    ),
-  15000,
-);
+let tickingAutonomy = false;
+const autonomyTick = setInterval(() => {
+  if (tickingAutonomy) return;
+  tickingAutonomy = true;
+  void tickAutonomy(store, engine)
+    .catch((reason) => console.error("Autopilot:", String(reason)))
+    .finally(() => {
+      tickingAutonomy = false;
+    });
+}, 15000);
 let refreshingPRs = false;
 const prTick = setInterval(() => {
   if (refreshingPRs) return;

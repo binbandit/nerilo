@@ -389,6 +389,25 @@ test("background Autopilot uses the task GitHub override when observing a PR", a
   }
 });
 
+test("stopping Autopilot during a background tick is not undone", async () => {
+  const f = await fixture();
+  try {
+    f.patch({
+      prUrl: "https://github.com/example/project/pull/1",
+      processedTurnId: "turn",
+    });
+    await tickAutonomy(f.store, f.engine, {
+      observe: async () => {
+        await configureAutonomy(f.store, f.taskId, { mode: "off" });
+        throw new Error("GitHub could not be reached");
+      },
+    });
+    expect(f.read()).toMatchObject({ mode: "off", status: "off" });
+  } finally {
+    await f.cleanup();
+  }
+});
+
 test("explicit adoption maintains the original PR branch without creating a duplicate", async () => {
   const f = await fixture();
   try {
